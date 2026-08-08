@@ -2275,7 +2275,7 @@
             }
         }
 
-        function printDeliverySpreadsheet() {
+        async function printDeliverySpreadsheet() {
             if (!dataLoaded) {
                 alert('Aguarde os pedidos carregarem antes de imprimir.');
                 return;
@@ -2284,6 +2284,14 @@
                 alert('Nenhum pedido encontrado.');
                 return;
             }
+
+            const printWindow = window.open('', '_blank', 'width=1200,height=800');
+            if (!printWindow) {
+                alert('Permita pop-ups no navegador para imprimir a lista.');
+                return;
+            }
+            printWindow.document.write('<p style="font-family:Arial;padding:30px">Conferindo endereços para impressão...</p>');
+            printWindow.document.close();
 
             const escapeHtml = value => String(value ?? '')
                 .replace(/&/g, '&amp;')
@@ -2294,6 +2302,15 @@
                 const dateCompare = String(a.date || '').localeCompare(String(b.date || ''));
                 return dateCompare || (Number(a.orderNumber) || 0) - (Number(b.orderNumber) || 0);
             });
+            const formattedAddresses = new Map();
+            for (const order of orders) {
+                const delivery = data.deliveries.find(d => String(d.orderId) === String(order.id));
+                const address = order.address || (delivery && delivery.address) || '';
+                if (!formattedAddresses.has(address)) {
+                    formattedAddresses.set(address, await formatDeliveryAddress(address));
+                    await wait(1100);
+                }
+            }
             const rows = orders.map(order => {
                 const delivery = data.deliveries.find(d => String(d.orderId) === String(order.id));
                 const receiver = order.receiverName || getClientName(order.clientId);
@@ -2303,17 +2320,12 @@
                 return `<tr>
                     <td class="number">#${escapeHtml(order.orderNumber || order.id)}</td>
                     <td><strong>${escapeHtml(receiver)}</strong></td>
-                    <td>${escapeHtml(address)}</td>
+                    <td>${escapeHtml(formattedAddresses.get(address))}</td>
                     <td>${escapeHtml(date ? formatDate(date) : '')}</td>
                     <td>${escapeHtml(time)}</td>
                     <td></td>
                 </tr>`;
             }).join('');
-            const printWindow = window.open('', '_blank', 'width=1200,height=800');
-            if (!printWindow) {
-                alert('Permita pop-ups no navegador para imprimir a lista.');
-                return;
-            }
             printWindow.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Lista de Entregas - Flor Linda</title>
                 <style>
                     @page { size: landscape; margin: 12mm; }
