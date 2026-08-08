@@ -1467,8 +1467,14 @@
         // SALVAR via REST API do Firebase
 
         let dataLoaded = false;
+        let saveQueue = Promise.resolve();
 
-        async function save() {
+        function save() {
+            saveQueue = saveQueue.then(() => saveNow());
+            return saveQueue;
+        }
+
+        async function saveNow() {
             if (!dataLoaded) return;
             const snapshot = JSON.parse(JSON.stringify(data));
             try {
@@ -1483,22 +1489,21 @@
             const token = await getAuthToken();
             const authParam = token ? '?auth=' + token : '';
             const paths = {
-                orders: data.orders,
-                products: data.products,
-                clients: data.clients,
-                finance: data.finance,
-                deliveries: data.deliveries,
-                drivers: data.drivers
+                orders: snapshot.orders,
+                products: snapshot.products,
+                clients: snapshot.clients,
+                finance: snapshot.finance,
+                deliveries: snapshot.deliveries,
+                drivers: snapshot.drivers
             };
-            Object.entries(paths).forEach(([key, val]) => {
-                fetch(`${DB_URL}/${key}.json${authParam}`, {
+            await Promise.all(Object.entries(paths).map(async ([key, val]) => {
+                const response = await fetch(`${DB_URL}/${key}.json${authParam}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(val)
-                }).then(r => {
-                    if (!r.ok) return r.text().then(t => { throw new Error(t); });
-                }).catch(e => console.error('Erro ' + key, e.message));
-            });
+                });
+                if (!response.ok) throw new Error(`Firebase ${key}: HTTP ${response.status}`);
+            }));
         }
 
         function seedProducts() {
@@ -1857,7 +1862,7 @@
             refreshAll();
         }
 
-        function saveDriver(e) {
+        async function saveDriver(e) {
             e.preventDefault();
             const driver = {
                 id: Date.now(),
@@ -1867,7 +1872,7 @@
                 active: true
             };
             data.drivers.push(driver);
-            save();
+            await save();
             closeModal('new-driver');
             e.target.reset();
             refreshAll();
