@@ -1519,6 +1519,18 @@
             return true;
         }
 
+        async function saveDriversOnly(drivers) {
+            await backupData(JSON.parse(JSON.stringify(data)));
+            const token = await getAuthToken();
+            const authParam = token ? '?auth=' + token : '';
+            const response = await fetch(`${DB_URL}/drivers.json${authParam}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(drivers)
+            });
+            if (!response.ok) throw new Error(`Firebase drivers: HTTP ${response.status}`);
+        }
+
         function seedProducts() {
             const catalog = [
                 { name: "Box de Flores G", price: 390, category: "box_flores", emoji: "💐", stock: 0, description: "Adicional de nome na caixa R$10,00. Balão incluso." },
@@ -1887,8 +1899,8 @@
             };
             data.drivers.push(driver);
             try {
-                const saved = await save();
-                if (!saved) throw new Error('Dados ainda não carregados ou backup indisponível');
+                if (!dataLoaded) throw new Error('Dados ainda não carregados');
+                await saveDriversOnly(data.drivers);
             } catch (error) {
                 data.drivers = data.drivers.filter(d => d.id !== driver.id);
                 console.error('Erro ao salvar entregador:', error);
@@ -2776,8 +2788,8 @@
                 const previousDrivers = data.drivers.slice();
                 data.drivers = data.drivers.filter(d => String(d.id) !== String(id));
                 try {
-                    const saved = await save();
-                    if (!saved) throw new Error('Falha ao gravar');
+                    if (!dataLoaded) throw new Error('Dados ainda não carregados');
+                    await saveDriversOnly(data.drivers);
                 } catch (error) {
                     data.drivers = previousDrivers;
                     console.error('Erro ao excluir entregador:', error);
