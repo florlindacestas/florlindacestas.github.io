@@ -966,6 +966,10 @@
                     <textarea id="order-address" rows="2" placeholder="Rua, número, bairro, cidade - UF"></textarea>
                 </div>
                 <div class="form-group">
+                    <label>CEP</label>
+                    <input type="text" id="order-cep" inputmode="numeric" maxlength="9" placeholder="00000-000">
+                </div>
+                <div class="form-group">
                     <label>Nome de quem vai receber</label>
                     <input type="text" id="order-receiver-name" placeholder="Nome completo">
                 </div>
@@ -1710,9 +1714,10 @@
                     deliveryValue: parseFloat(document.getElementById('order-delivery-value').value) || 0,
                     receiverPhone: document.getElementById('order-receiver-phone').value,
                     receiverName: document.getElementById('order-receiver-name').value,
-                    date: document.getElementById('order-date').value,
-                    address: document.getElementById('order-address').value,
-                    notes: document.getElementById('order-notes').value,
+                     date: document.getElementById('order-date').value,
+                     address: document.getElementById('order-address').value,
+                     cep: document.getElementById('order-cep').value,
+                     notes: document.getElementById('order-notes').value,
                     cardMessage: document.getElementById('order-card-message').value,
                     photos: photosBase64,
                     payment: document.getElementById('order-payment').value,
@@ -2166,10 +2171,11 @@
             return match ? `${match[1]}${match[2] ? ' ' + match[2].trim() : ''}` : '';
         }
 
-        async function formatDeliveryAddress(address) {
+        async function formatDeliveryAddress(address, cepValue) {
             const original = String(address || '').trim();
             if (!original) return 'Endereço não informado';
-            const cacheKey = 'florlinda-geocode-' + original.toLowerCase();
+            const cep = String(cepValue || (original.match(/\b\d{5}-?\d{3}\b/) || [''])[0]).replace(/\D/g, '');
+            const cacheKey = 'florlinda-geocode-' + `${cep}-${original.toLowerCase()}`;
             const cached = localStorage.getItem(cacheKey);
             if (cached) return cached;
 
@@ -2180,6 +2186,23 @@
                     .replace(/\s+(apto|apartamento|sala|bloco|casa|fundos|cobertura|conjunto|cj)\.?\s*.*$/i, '')
                     .replace(/\s+/g, ' ')
                     .trim();
+                if (cep.length === 8) {
+                    const viaCepResponse = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+                    if (viaCepResponse.ok) {
+                        const viaCep = await viaCepResponse.json();
+                        const viaCepCity = normalizeRegionText(viaCep.localidade);
+                        if (!viaCep.erro && allowedCities.includes(viaCepCity) && viaCep.logradouro) {
+                            const numberMatch = cleanedAddress.match(/,?\s*(\d+[a-z]?)\s*$/i);
+                            const value = [
+                                `${viaCep.logradouro}${numberMatch ? ', ' + numberMatch[1] : ''}`,
+                                viaCep.bairro,
+                                viaCep.localidade
+                            ].filter(Boolean).join(' - ');
+                            localStorage.setItem(cacheKey, value);
+                            return value;
+                        }
+                    }
+                }
                 const streetOnly = cleanedAddress.replace(/,?\s+\d+[a-z]?\s*$/i, '').trim();
                 const searchForms = [...new Set([cleanedAddress, streetOnly].filter(Boolean))];
                 const cityOrder = allowedCities.slice().sort((a, b) => {
@@ -2264,8 +2287,9 @@
                 const time = (delivery && delivery.time) || order.time || '';
                 if (!formattedAddresses.has(address)) {
                     const cacheKey = 'florlinda-geocode-' + String(address || '').toLowerCase();
+                    const cacheKey = 'florlinda-geocode-' + `${String(order.cep || '').replace(/\D/g, '')}-${String(address || '').toLowerCase()}`;
                     const cached = localStorage.getItem(cacheKey);
-                    formattedAddresses.set(address, cached || await formatDeliveryAddress(address));
+                    formattedAddresses.set(address, cached || await formatDeliveryAddress(address, order.cep));
                     if (!cached) await wait(1100);
                 }
 
@@ -2339,8 +2363,9 @@
                 const address = order.address || (delivery && delivery.address) || '';
                 if (!formattedAddresses.has(address)) {
                     const cacheKey = 'florlinda-geocode-' + String(address || '').toLowerCase();
+                    const cacheKey = 'florlinda-geocode-' + `${String(order.cep || '').replace(/\D/g, '')}-${String(address || '').toLowerCase()}`;
                     const cached = localStorage.getItem(cacheKey);
-                    formattedAddresses.set(address, cached || await formatDeliveryAddress(address));
+                    formattedAddresses.set(address, cached || await formatDeliveryAddress(address, order.cep));
                     if (!cached) await wait(1100);
                 }
             }
