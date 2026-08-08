@@ -1482,12 +1482,12 @@
         let saveQueue = Promise.resolve();
 
         function save() {
-            saveQueue = saveQueue.then(() => saveNow());
+            saveQueue = saveQueue.catch(() => false).then(() => saveNow());
             return saveQueue;
         }
 
         async function saveNow() {
-            if (!dataLoaded) return;
+            if (!dataLoaded) return false;
             const snapshot = JSON.parse(JSON.stringify(data));
             try {
                 backupPromise = backupPromise || backupData(snapshot);
@@ -1495,7 +1495,7 @@
             } catch (error) {
                 backupPromise = null;
                 console.error('Gravação cancelada: backup falhou', error);
-                return;
+                return false;
             }
             backupPromise = null;
             const token = await getAuthToken();
@@ -1516,6 +1516,7 @@
                 });
                 if (!response.ok) throw new Error(`Firebase ${key}: HTTP ${response.status}`);
             }));
+            return true;
         }
 
         function seedProducts() {
@@ -1885,7 +1886,15 @@
                 active: true
             };
             data.drivers.push(driver);
-            await save();
+            try {
+                const saved = await save();
+                if (!saved) throw new Error('Dados ainda não carregados ou backup indisponível');
+            } catch (error) {
+                data.drivers = data.drivers.filter(d => d.id !== driver.id);
+                console.error('Erro ao salvar entregador:', error);
+                alert('Não foi possível salvar o entregador. Tente novamente.');
+                return;
+            }
             closeModal('new-driver');
             e.target.reset();
             refreshAll();
@@ -2762,10 +2771,20 @@
             }
         }
 
-        function deleteDriver(id) {
+        async function deleteDriver(id) {
             if (confirm('Excluir este entregador?')) {
-                data.drivers = data.drivers.filter(d => d.id !== id);
-                save();
+                const previousDrivers = data.drivers.slice();
+                data.drivers = data.drivers.filter(d => String(d.id) !== String(id));
+                try {
+                    const saved = await save();
+                    if (!saved) throw new Error('Falha ao gravar');
+                } catch (error) {
+                    data.drivers = previousDrivers;
+                    console.error('Erro ao excluir entregador:', error);
+                    alert('Não foi possível excluir o entregador. Tente novamente.');
+                    refreshAll();
+                    return;
+                }
                 refreshAll();
             }
         }
