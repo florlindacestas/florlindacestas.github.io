@@ -725,8 +725,8 @@
         <div class="search-bar">
             <input type="text" placeholder="Buscar pedido..." id="search-orders" oninput="filterOrders()">
         </div>
-        <button class="btn btn-primary" onclick="exportDeliverySpreadsheet()" style="margin-bottom:12px; width:100%;">
-            📊 Baixar planilha de entregas
+        <button class="btn btn-primary" onclick="exportDeliverySpreadsheet()" id="btn-export-deliveries" style="margin-bottom:12px; width:100%;">
+            📊 Baixar planilha com endereços conferidos
         </button>
         <button class="btn btn-outline" onclick="printDeliverySpreadsheet()" style="margin-bottom:12px; width:100%; background:white;">
             🖨️ Imprimir lista de entregas
@@ -2157,7 +2157,57 @@
             `).join('');
         }
 
-        function exportDeliverySpreadsheet() {
+        function normalizeRegionText(value) {
+            return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        }
+
+        async function formatDeliveryAddress(address) {
+            const original = String(address || '').trim();
+            if (!original) return 'Endereço não informado';
+            const cacheKey = 'florlinda-geocode-' + original.toLowerCase();
+            const cached = localStorage.getItem(cacheKey);
+            if (cached) return cached;
+
+            const allowedCities = ['florianopolis', 'sao jose', 'palhoca', 'biguacu'];
+            const params = new URLSearchParams({
+                q: `${original}, Santa Catarina, Brasil`,
+                format: 'jsonv2',
+                addressdetails: '1',
+                limit: '5',
+                countrycodes: 'br'
+            });
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?${params}`);
+                if (!response.ok) throw new Error('Geocodificação indisponível');
+                const results = await response.json();
+                const result = results.find(item => {
+                    const parts = item.address || {};
+                    const city = normalizeRegionText(parts.city || parts.town || parts.municipality || '');
+                    return allowedCities.includes(city);
+                });
+                if (!result) return `Não localizado nas cidades atendidas: ${original}`;
+
+                const parts = result.address || {};
+                const street = parts.road || parts.pedestrian || parts.residential || '';
+                const number = parts.house_number || '';
+                const neighborhood = parts.neighbourhood || parts.suburb || parts.quarter || parts.city_district || '';
+                const city = parts.city || parts.town || parts.municipality || '';
+                const formatted = [street && `${street}${number ? ', ' + number : ''}`, neighborhood, city]
+                    .filter(Boolean).join(' - ');
+                const value = formatted || `Não foi possível detalhar: ${original}`;
+                localStorage.setItem(cacheKey, value);
+                return value;
+            } catch (error) {
+                console.warn('Não foi possível conferir o endereço:', original, error);
+                return `Não conferido automaticamente: ${original}`;
+            }
+        }
+
+        function wait(milliseconds) {
+            return new Promise(resolve => setTimeout(resolve, milliseconds));
+        }
+
+        async function exportDeliverySpreadsheet() {
             if (!dataLoaded) {
                 alert('Aguarde os pedidos carregarem antes de baixar a planilha.');
                 return;
@@ -2167,21 +2217,39 @@
                 return;
             }
 
+            const button = document.getElementById('btn-export-deliveries');
+            if (button) {
+                button.disabled = true;
+                button.textContent = '⏳ Conferindo endereços...';
+            }
             const escapeCell = value => `"${String(value ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`;
             const rows = data.orders.slice().sort((a, b) => {
                 const dateCompare = String(a.date || '').localeCompare(String(b.date || ''));
                 return dateCompare || (Number(a.orderNumber) || 0) - (Number(b.orderNumber) || 0);
-            }).map(order => {
+            });
+            const formattedAddresses = new Map();
+            for (const order of rows) {
                 const delivery = data.deliveries.find(d => String(d.orderId) === String(order.id));
                 const receiver = order.receiverName || getClientName(order.clientId);
                 const address = order.address || (delivery && delivery.address) || '';
                 const date = (delivery && delivery.date) || order.date || '';
                 const time = (delivery && delivery.time) || order.time || '';
+                if (!formattedAddresses.has(address)) {
+                    formattedAddresses.set(address, await formatDeliveryAddress(address));
+                    await wait(1100);
+                }
 
+                order.formattedDeliveryAddress = formattedAddresses.get(address);
+            }
+            const csvRows = rows.map(order => {
+                const delivery = data.deliveries.find(d => String(d.orderId) === String(order.id));
+                const receiver = order.receiverName || getClientName(order.clientId);
+                const date = (delivery && delivery.date) || order.date || '';
+                const time = (delivery && delivery.time) || order.time || '';
                 return [
                     order.orderNumber || order.id,
                     receiver,
-                    address,
+                    order.formattedDeliveryAddress,
                     date ? formatDate(date) : '',
                     time,
                     ''
@@ -2190,7 +2258,7 @@
 
             const csv = '\ufeff' + [
                 ['Número do pedido', 'Nome de quem recebe', 'Endereço da entrega', 'Data da entrega', 'Horário', 'Entregador'].map(escapeCell).join(';'),
-                ...rows
+                ...csvRows
             ].join('\r\n');
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
@@ -2201,6 +2269,10 @@
             link.click();
             link.remove();
             setTimeout(() => URL.revokeObjectURL(url), 1000);
+            if (button) {
+                button.disabled = false;
+                button.textContent = '📊 Baixar planilha com endereços conferidos';
+            }
         }
 
         function printDeliverySpreadsheet() {
