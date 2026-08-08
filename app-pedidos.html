@@ -725,6 +725,9 @@
         <div class="search-bar">
             <input type="text" placeholder="Buscar pedido..." id="search-orders" oninput="filterOrders()">
         </div>
+        <button class="btn btn-primary" onclick="exportDeliverySpreadsheet()" style="margin-bottom:12px; width:100%;">
+            📊 Baixar planilha de entregas
+        </button>
 
         <div class="tabs">
             <button class="tab active" onclick="filterByStatus('all', this)">Todos</button>
@@ -2149,6 +2152,54 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        function exportDeliverySpreadsheet() {
+            if (!dataLoaded) {
+                alert('Aguarde os pedidos carregarem antes de baixar a planilha.');
+                return;
+            }
+            if (!data.orders.length) {
+                alert('Nenhum pedido encontrado.');
+                return;
+            }
+
+            const escapeCell = value => `"${String(value ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`;
+            const statusLabels = { pending: 'Pendente', done: 'Pronto', delivered: 'Entregue', cancelled: 'Cancelado' };
+            const rows = data.orders.slice().sort((a, b) => {
+                const dateCompare = String(a.date || '').localeCompare(String(b.date || ''));
+                return dateCompare || (Number(a.orderNumber) || 0) - (Number(b.orderNumber) || 0);
+            }).map(order => {
+                const delivery = data.deliveries.find(d => String(d.orderId) === String(order.id));
+                const driverId = delivery ? delivery.driverId : order.driverId;
+                const driver = data.drivers.find(d => String(d.id) === String(driverId));
+                const receiver = order.receiverName || getClientName(order.clientId);
+                const address = order.address || (delivery && delivery.address) || '';
+                const date = (delivery && delivery.date) || order.date || '';
+
+                return [
+                    order.orderNumber || order.id,
+                    receiver,
+                    address,
+                    date ? formatDate(date) : '',
+                    driver ? driver.name : 'Sem entregador',
+                    statusLabels[order.status] || order.status || ''
+                ].map(escapeCell).join(';');
+            });
+
+            const csv = '\ufeff' + [
+                ['Número do pedido', 'Nome de quem recebe', 'Endereço da entrega', 'Data da entrega', 'Entregador', 'Status'].map(escapeCell).join(';'),
+                ...rows
+            ].join('\r\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `entregas-florlinda-${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
 
         function refreshProducts() {
