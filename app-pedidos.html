@@ -2168,14 +2168,11 @@
             }
 
             const escapeCell = value => `"${String(value ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`;
-            const statusLabels = { pending: 'Pendente', done: 'Pronto', delivered: 'Entregue', cancelled: 'Cancelado' };
             const rows = data.orders.slice().sort((a, b) => {
                 const dateCompare = String(a.date || '').localeCompare(String(b.date || ''));
                 return dateCompare || (Number(a.orderNumber) || 0) - (Number(b.orderNumber) || 0);
             }).map(order => {
                 const delivery = data.deliveries.find(d => String(d.orderId) === String(order.id));
-                const driverId = delivery ? delivery.driverId : order.driverId;
-                const driver = data.drivers.find(d => String(d.id) === String(driverId));
                 const receiver = order.receiverName || getClientName(order.clientId);
                 const address = order.address || (delivery && delivery.address) || '';
                 const date = (delivery && delivery.date) || order.date || '';
@@ -2187,13 +2184,12 @@
                     address,
                     date ? formatDate(date) : '',
                     time,
-                    driver ? driver.name : 'Sem entregador',
-                    statusLabels[order.status] || order.status || ''
+                    ''
                 ].map(escapeCell).join(';');
             });
 
             const csv = '\ufeff' + [
-                ['Número do pedido', 'Nome de quem recebe', 'Endereço da entrega', 'Data da entrega', 'Horário', 'Entregador', 'Status'].map(escapeCell).join(';'),
+                ['Número do pedido', 'Nome de quem recebe', 'Endereço da entrega', 'Data da entrega', 'Horário', 'Entregador'].map(escapeCell).join(';'),
                 ...rows
             ].join('\r\n');
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -2222,15 +2218,12 @@
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;');
-            const statusLabels = { pending: 'Pendente', done: 'Pronto', delivered: 'Entregue', cancelled: 'Cancelado' };
             const orders = data.orders.slice().sort((a, b) => {
                 const dateCompare = String(a.date || '').localeCompare(String(b.date || ''));
                 return dateCompare || (Number(a.orderNumber) || 0) - (Number(b.orderNumber) || 0);
             });
             const rows = orders.map(order => {
                 const delivery = data.deliveries.find(d => String(d.orderId) === String(order.id));
-                const driverId = delivery ? delivery.driverId : order.driverId;
-                const driver = data.drivers.find(d => String(d.id) === String(driverId));
                 const receiver = order.receiverName || getClientName(order.clientId);
                 const address = order.address || (delivery && delivery.address) || '';
                 const date = (delivery && delivery.date) || order.date || '';
@@ -2241,8 +2234,7 @@
                     <td>${escapeHtml(address)}</td>
                     <td>${escapeHtml(date ? formatDate(date) : '')}</td>
                     <td>${escapeHtml(time)}</td>
-                    <td>${escapeHtml(driver ? driver.name : 'Sem entregador')}</td>
-                    <td>${escapeHtml(statusLabels[order.status] || order.status || '')}</td>
+                    <td></td>
                 </tr>`;
             }).join('');
             const printWindow = window.open('', '_blank', 'width=1200,height=800');
@@ -2268,12 +2260,11 @@
                     th:nth-child(3), td:nth-child(3) { width: 32%; }
                     th:nth-child(4), td:nth-child(4) { width: 10%; }
                     th:nth-child(5), td:nth-child(5) { width: 9%; }
-                    th:nth-child(6), td:nth-child(6) { width: 15%; }
-                    th:nth-child(7), td:nth-child(7) { width: 9%; }
+                    th:nth-child(6), td:nth-child(6) { width: 18%; }
                     footer { margin-top: 14px; font-size: 11px; color: #666; }
                 </style></head><body>
                 <header><div><h1>Flor Linda Cestas</h1><p>Lista de entregas</p></div><p>Gerado em ${escapeHtml(new Date().toLocaleString('pt-BR'))}</p></header>
-                <table><thead><tr><th>Pedido</th><th>Quem recebe</th><th>Endereço da entrega</th><th>Data</th><th>Horário</th><th>Entregador</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>
+                <table><thead><tr><th>Pedido</th><th>Quem recebe</th><th>Endereço da entrega</th><th>Data</th><th>Horário</th><th>Entregador</th></tr></thead><tbody>${rows}</tbody></table>
                 <footer>Total de pedidos: ${orders.length}</footer>
                 </body></html>`);
             printWindow.document.close();
