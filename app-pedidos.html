@@ -2263,8 +2263,10 @@
                 const date = (delivery && delivery.date) || order.date || '';
                 const time = (delivery && delivery.time) || order.time || '';
                 if (!formattedAddresses.has(address)) {
-                    formattedAddresses.set(address, await formatDeliveryAddress(address));
-                    await wait(1100);
+                    const cacheKey = 'florlinda-geocode-' + String(address || '').toLowerCase();
+                    const cached = localStorage.getItem(cacheKey);
+                    formattedAddresses.set(address, cached || await formatDeliveryAddress(address));
+                    if (!cached) await wait(1100);
                 }
 
                 order.formattedDeliveryAddress = formattedAddresses.get(address);
@@ -2336,8 +2338,10 @@
                 const delivery = data.deliveries.find(d => String(d.orderId) === String(order.id));
                 const address = order.address || (delivery && delivery.address) || '';
                 if (!formattedAddresses.has(address)) {
-                    formattedAddresses.set(address, await formatDeliveryAddress(address));
-                    await wait(1100);
+                    const cacheKey = 'florlinda-geocode-' + String(address || '').toLowerCase();
+                    const cached = localStorage.getItem(cacheKey);
+                    formattedAddresses.set(address, cached || await formatDeliveryAddress(address));
+                    if (!cached) await wait(1100);
                 }
             }
             const rows = orders.map(order => {
