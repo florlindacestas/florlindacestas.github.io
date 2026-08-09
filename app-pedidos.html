@@ -1427,8 +1427,43 @@
             if (changed) save();
         }
 
+        let syncTimer = null;
+        let syncInProgress = false;
+
+        function mergeById(current, remote) {
+            const merged = new Map((current || []).map(item => [String(item.id), item]));
+            (remote || []).forEach(item => merged.set(String(item.id), item));
+            return Array.from(merged.values());
+        }
+
+        async function syncRemoteData() {
+            if (!dataLoaded || syncInProgress) return;
+            syncInProgress = true;
+            try {
+                const paths = ['orders', 'clients', 'finance', 'drivers', 'deliveries'];
+                const results = await Promise.all(paths.map(async path => {
+                    const response = await fetch(`${DB_URL}/${path}.json?t=${Date.now()}`, { cache: 'no-store' });
+                    if (!response.ok) throw new Error(`Firebase ${path}: HTTP ${response.status}`);
+                    const value = await response.json();
+                    return value ? Object.values(value) : [];
+                }));
+                const [orders, clients, finance, drivers, deliveries] = results;
+                data.orders = mergeById(data.orders, orders);
+                data.clients = mergeById(data.clients, clients);
+                data.finance = mergeById(data.finance, finance);
+                data.drivers = mergeById(data.drivers, drivers);
+                data.deliveries = mergeById(data.deliveries, deliveries);
+                refreshAll();
+            } catch (error) {
+                console.error('Erro na sincronização automática:', error);
+            } finally {
+                syncInProgress = false;
+            }
+        }
+
         function startOrderListener() {
-            // Disabled - using REST API instead of Firebase SDK
+            if (syncTimer) clearInterval(syncTimer);
+            syncTimer = setInterval(syncRemoteData, 3000);
         }
 
         function showNewOrderNotification(product, value, receiver) {
@@ -1888,8 +1923,15 @@
             refreshAll();
         }
 
+        let driverSaving = false;
+
         async function saveDriver(e) {
             e.preventDefault();
+            if (driverSaving) return;
+            driverSaving = true;
+            const form = e.currentTarget;
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (submitButton) submitButton.disabled = true;
             const driver = {
                 id: Date.now(),
                 name: document.getElementById('driver-name').value,
@@ -1898,19 +1940,25 @@
                 active: true
             };
             data.drivers.push(driver);
+            refreshAll();
             try {
                 if (!dataLoaded) throw new Error('Dados ainda não carregados');
                 await saveDriversOnly(data.drivers);
             } catch (error) {
                 data.drivers = data.drivers.filter(d => d.id !== driver.id);
                 console.error('Erro ao salvar entregador:', error);
+                refreshAll();
                 alert('Não foi possível salvar o entregador. Tente novamente.');
+                driverSaving = false;
+                if (submitButton) submitButton.disabled = false;
                 return;
             }
             closeModal('new-driver');
-            e.target.reset();
+            form.reset();
             refreshAll();
             alert('Entregador salvo com sucesso!');
+            driverSaving = false;
+            if (submitButton) submitButton.disabled = false;
         }
 
         function saveDelivery(e) {
@@ -2787,6 +2835,7 @@
             if (confirm('Excluir este entregador?')) {
                 const previousDrivers = data.drivers.slice();
                 data.drivers = data.drivers.filter(d => String(d.id) !== String(id));
+                refreshAll();
                 try {
                     if (!dataLoaded) throw new Error('Dados ainda não carregados');
                     await saveDriversOnly(data.drivers);
@@ -3614,6 +3663,7 @@
         loadData().then(() => {
             try { seedProducts(); } catch(e) { console.error('Seed:', e); }
             try { requestNotificationPermission(); } catch(e) {}
+            startOrderListener();
         }).catch(err => {
             console.error('Erro ao carregar dados:', err);
             try { refreshAll(); } catch(e) {}
