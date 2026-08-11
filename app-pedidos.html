@@ -611,37 +611,49 @@
             <div style="font-size:3rem;margin-bottom:10px;">🌸</div>
             <h2 style="font-family:'Playfair Display',serif;color:#6a5a4a;margin-bottom:5px;">Florlinda</h2>
             <p style="color:#8a7a6a;font-size:0.85rem;margin-bottom:25px;">Arranjos e Cestas</p>
-            <input type="text" id="login-user" placeholder="Usuário" style="width:100%;padding:12px 15px;border:2px solid #fdd5e7;border-radius:10px;font-size:0.95rem;margin-bottom:12px;outline:none;font-family:'Poppins',sans-serif;">
+            <input type="email" id="login-user" placeholder="E-mail" value="bittencourtab@gmail.com" autocomplete="username" style="width:100%;padding:12px 15px;border:2px solid #fdd5e7;border-radius:10px;font-size:0.95rem;margin-bottom:12px;outline:none;font-family:'Poppins',sans-serif;">
             <input type="password" id="login-pass" placeholder="Senha" style="width:100%;padding:12px 15px;border:2px solid #fdd5e7;border-radius:10px;font-size:0.95rem;margin-bottom:8px;outline:none;font-family:'Poppins',sans-serif;" onkeydown="if(event.key==='Enter')doLogin()">
             <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:#8a7a6a;margin-bottom:20px;cursor:pointer;">
                 <input type="checkbox" id="login-remember" checked> Lembrar login
             </label>
-            <button onclick="doLogin()" style="width:100%;padding:13px;background:linear-gradient(135deg,#E8A5A0,#C47878);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">Entrar</button>
+            <button id="login-button" onclick="doLogin()" style="width:100%;padding:13px;background:linear-gradient(135deg,#E8A5A0,#C47878);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">Entrar</button>
             <p id="login-error" style="color:#e74c3c;font-size:0.8rem;margin-top:12px;display:none;">Usuário ou senha incorretos</p>
         </div>
     </div>
 
     <script>
-        function doLogin() {
-            var user = document.getElementById('login-user').value.trim();
-            var pass = document.getElementById('login-pass').value;
-            if (user === 'florlinda' && pass === '1234') {
-                if (document.getElementById('login-remember').checked) {
-                    localStorage.setItem('florlinda-auth', 'ok');
+        async function doLogin() {
+            const email = document.getElementById('login-user').value.trim();
+            const password = document.getElementById('login-pass').value;
+            const button = document.getElementById('login-button');
+            const error = document.getElementById('login-error');
+            error.style.display = 'none';
+            button.disabled = true;
+            button.textContent = 'Entrando...';
+            try {
+                if (!auth) throw new Error('Firebase Authentication indisponível');
+                const persistence = document.getElementById('login-remember').checked
+                    ? firebase.auth.Auth.Persistence.LOCAL
+                    : firebase.auth.Auth.Persistence.SESSION;
+                await auth.setPersistence(persistence);
+                const credential = await auth.signInWithEmailAndPassword(email, password);
+                if (credential.user.uid !== ADMIN_UID) {
+                    await auth.signOut();
+                    throw new Error('Esta conta não possui acesso administrativo');
                 }
-                sessionStorage.setItem('florlinda-auth', 'ok');
-                document.getElementById('login-screen').style.display = 'none';
-            } else {
-                document.getElementById('login-error').style.display = 'block';
+            } catch (loginError) {
+                console.error('Erro de login:', loginError);
+                error.textContent = loginError.code === 'auth/wrong-password' || loginError.code === 'auth/invalid-credential'
+                    ? 'E-mail ou senha incorretos'
+                    : (loginError.message || 'Não foi possível entrar');
+                error.style.display = 'block';
                 document.getElementById('login-pass').value = '';
                 document.getElementById('login-pass').focus();
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Entrar';
             }
         }
-        (function() {
-            if (localStorage.getItem('florlinda-auth') === 'ok' || sessionStorage.getItem('florlinda-auth') === 'ok') {
-                document.getElementById('login-screen').style.display = 'none';
-            }
-        })();
     </script>
     <div class="header">
         <h1>Florlinda</h1>
@@ -662,10 +674,9 @@
     </div>
 
     <script>
-        function doLogout() {
-            if (auth) auth.signOut();
-            localStorage.removeItem('florlinda-auth');
-            sessionStorage.removeItem('florlinda-auth');
+        async function doLogout() {
+            if (syncTimer) clearInterval(syncTimer);
+            if (auth) await auth.signOut();
             location.reload();
         }
     </script>
@@ -1318,6 +1329,7 @@
 
         // DADOS
         let data = { orders: [], products: [], clients: [], finance: [], drivers: [], deliveries: [] };
+        let authGeneration = 0;
         let currentFilter = 'all';
         let currentProductFilter = 'all';
         let currentFinanceFilter = 'all';
@@ -1325,21 +1337,27 @@
 
         // CARREGAR DADOS via REST API
         const DB_URL = 'https://florlinda-184ec-default-rtdb.firebaseio.com';
+        const ADMIN_UID = 'TzTFIRf1C6WPfQekQgeC1vGi8KS2';
 
         async function getAuthToken() {
-            if (auth && auth.currentUser) {
-                return await auth.currentUser.getIdToken();
+            if (!auth || !auth.currentUser || auth.currentUser.uid !== ADMIN_UID) {
+                throw new Error('Sessão administrativa necessária');
             }
-            return null;
+            return auth.currentUser.getIdToken();
+        }
+
+        async function firebaseRequest(path, options = {}) {
+            const token = await getAuthToken();
+            const url = new URL(`${DB_URL}/${path}`);
+            url.searchParams.set('auth', token);
+            return fetch(url.toString(), options);
         }
 
         let backupPromise = null;
 
         async function backupData(snapshot) {
-            const token = await getAuthToken();
-            const authParam = token ? '?auth=' + token : '';
             const backup = { savedAt: new Date().toISOString(), data: snapshot };
-            const response = await fetch(`${DB_URL}/backups/latest.json${authParam}`, {
+            const response = await firebaseRequest('backups/latest.json', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(backup)
@@ -1365,9 +1383,7 @@
         async function restoreLastBackup() {
             if (!confirm('Restaurar o último backup? O estado atual será substituído.')) return;
             try {
-                const token = await getAuthToken();
-                const authParam = token ? '?auth=' + token : '';
-                const response = await fetch(`${DB_URL}/backups/latest.json${authParam}`);
+                const response = await firebaseRequest('backups/latest.json');
                 if (!response.ok) throw new Error(`Backup Firebase: HTTP ${response.status}`);
                 const backup = await response.json();
                 if (!backup || !backup.data) throw new Error('Backup vazio');
@@ -1382,16 +1398,15 @@
             }
         }
 
-        async function loadData() {
+        async function loadData(generation = authGeneration) {
             try {
-                const token = await getAuthToken();
-                const authParam = token ? '?auth=' + token : '';
                 const paths = ['orders','products','clients','finance','drivers','deliveries'];
                 const results = await Promise.all(paths.map(async p => {
-                    const response = await fetch(`${DB_URL}/${p}.json${authParam}`);
+                    const response = await firebaseRequest(`${p}.json`);
                     if (!response.ok) throw new Error(`Firebase ${p}: HTTP ${response.status}`);
                     return response.json();
                 }));
+                if (generation !== authGeneration || !auth.currentUser || auth.currentUser.uid !== ADMIN_UID) return false;
                 const [o, p, c, f, d, de] = results;
                 data.orders = o ? Object.values(o) : [];
                 data.products = p ? Object.values(p) : [];
@@ -1403,8 +1418,10 @@
                 dataLoaded = true;
                 fixOldOrders();
                 refreshAll();
+                return true;
             } catch(e) {
                 console.error('Erro ao carregar:', e);
+                throw e;
             }
         }
 
@@ -1439,14 +1456,16 @@
         async function syncRemoteData() {
             if (!dataLoaded || syncInProgress) return;
             syncInProgress = true;
+            const generation = authGeneration;
             try {
                 const paths = ['orders', 'clients', 'finance', 'drivers', 'deliveries'];
                 const results = await Promise.all(paths.map(async path => {
-                    const response = await fetch(`${DB_URL}/${path}.json?t=${Date.now()}`, { cache: 'no-store' });
+                    const response = await firebaseRequest(`${path}.json?t=${Date.now()}`, { cache: 'no-store' });
                     if (!response.ok) throw new Error(`Firebase ${path}: HTTP ${response.status}`);
                     const value = await response.json();
                     return value ? Object.values(value) : [];
                 }));
+                if (generation !== authGeneration || !auth.currentUser || auth.currentUser.uid !== ADMIN_UID) return;
                 const [orders, clients, finance, drivers, deliveries] = results;
                 data.orders = mergeById(data.orders, orders);
                 data.clients = mergeById(data.clients, clients);
@@ -1533,8 +1552,6 @@
                 return false;
             }
             backupPromise = null;
-            const token = await getAuthToken();
-            const authParam = token ? '?auth=' + token : '';
             const paths = {
                 orders: snapshot.orders,
                 products: snapshot.products,
@@ -1544,7 +1561,7 @@
                 drivers: snapshot.drivers
             };
             await Promise.all(Object.entries(paths).map(async ([key, val]) => {
-                const response = await fetch(`${DB_URL}/${key}.json${authParam}`, {
+                const response = await firebaseRequest(`${key}.json`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(val)
@@ -1556,9 +1573,7 @@
 
         async function saveDriversOnly(drivers) {
             await backupData(JSON.parse(JSON.stringify(data)));
-            const token = await getAuthToken();
-            const authParam = token ? '?auth=' + token : '';
-            const response = await fetch(`${DB_URL}/drivers.json${authParam}`, {
+            const response = await firebaseRequest('drivers.json', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(drivers)
@@ -3659,15 +3674,56 @@
             });
         });
 
-        // INICIAR - CARREGAR DADOS DO FIREBASE
-        loadData().then(() => {
-            try { seedProducts(); } catch(e) { console.error('Seed:', e); }
-            try { requestNotificationPermission(); } catch(e) {}
-            startOrderListener();
-        }).catch(err => {
-            console.error('Erro ao carregar dados:', err);
-            try { refreshAll(); } catch(e) {}
-        });
+        let adminAppStarted = false;
+
+        async function startAdminApp(generation) {
+            if (adminAppStarted) return;
+            adminAppStarted = true;
+            try {
+                const loaded = await loadData(generation);
+                if (!loaded || generation !== authGeneration) {
+                    adminAppStarted = false;
+                    return;
+                }
+                try { seedProducts(); } catch(e) { console.error('Seed:', e); }
+                try { requestNotificationPermission(); } catch(e) {}
+                startOrderListener();
+            } catch (error) {
+                adminAppStarted = false;
+                console.error('Erro ao carregar dados:', error);
+                document.getElementById('login-error').textContent = 'Não foi possível carregar os dados.';
+                document.getElementById('login-error').style.display = 'block';
+                document.getElementById('login-screen').style.display = 'flex';
+            }
+        }
+
+        if (auth) {
+            auth.onAuthStateChanged(async user => {
+                if (!user) {
+                    authGeneration++;
+                    if (syncTimer) clearInterval(syncTimer);
+                    syncTimer = null;
+                    syncInProgress = false;
+                    dataLoaded = false;
+                    adminAppStarted = false;
+                    data = { orders: [], products: [], clients: [], finance: [], drivers: [], deliveries: [] };
+                    document.getElementById('login-screen').style.display = 'flex';
+                    return;
+                }
+                if (user.uid !== ADMIN_UID) {
+                    await auth.signOut();
+                    document.getElementById('login-error').textContent = 'Esta conta não possui acesso administrativo.';
+                    document.getElementById('login-error').style.display = 'block';
+                    return;
+                }
+                const generation = ++authGeneration;
+                document.getElementById('login-screen').style.display = 'none';
+                startAdminApp(generation);
+            });
+        } else {
+            document.getElementById('login-error').textContent = 'Firebase Authentication indisponível.';
+            document.getElementById('login-error').style.display = 'block';
+        }
 
         // REGISTRAR SERVICE WORKER PARA PWA
         if ('serviceWorker' in navigator) {

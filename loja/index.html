@@ -1210,7 +1210,7 @@
                     <span>Total:</span><span id="checkout-total" style="color:var(--green-dark)">R$0</span>
                 </div>
             </div>
-            <button class="place-order-btn" onclick="placeOrder()">Confirmar Pedido</button>
+            <button id="place-order-button" class="place-order-btn" onclick="placeOrder().catch(error => { console.error('Erro ao enviar pedido:', error); showToast('Não foi possível enviar o pedido. Tente novamente.'); })">Confirmar Pedido</button>
         </div>
     </div>
 
@@ -1406,13 +1406,13 @@
             databaseURL: "https://florlinda-184ec-default-rtdb.firebaseio.com",
             projectId: "florlinda-184ec",
             storageBucket: "florlinda-184ec.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abc123"
+            messagingSenderId: "667525922025",
+            appId: "1:667525922025:web:c075c18ce185f24608c478"
         };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const auth = firebase.auth();
-        auth.signInAnonymously().catch(e => console.error('Auth anônima falhou:', e));
+        const storeApp = firebase.initializeApp(firebaseConfig, 'storefront');
+        const db = storeApp.database();
+        const auth = storeApp.auth();
+        const authReady = auth.signInAnonymously();
 
         let allProducts = [];
         let cart = JSON.parse(localStorage.getItem('florlinda-cart') || '[]');
@@ -1682,7 +1682,25 @@
             el.classList.add('selected');
         }
 
+        let orderSubmissionInProgress = false;
+
         async function placeOrder() {
+            if (orderSubmissionInProgress) return;
+            const button = document.getElementById('place-order-button');
+            orderSubmissionInProgress = true;
+            button.disabled = true;
+            button.textContent = 'Enviando...';
+            try {
+                await submitOrder();
+            } finally {
+                orderSubmissionInProgress = false;
+                button.disabled = false;
+                button.textContent = 'Confirmar Pedido';
+            }
+        }
+
+        async function submitOrder() {
+            await authReady;
             const name = document.getElementById('client-name').value.trim();
             const phone = document.getElementById('client-phone').value.trim();
             const address = document.getElementById('client-address').value.trim();
@@ -1698,30 +1716,27 @@
 
             const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
             const orderId = Date.now();
+            const createdBy = auth.currentUser.uid;
+            const updates = {};
 
-            const clientSnap = await db.ref('clients').orderByChild('phone').equalTo(phone).once('value');
-            let clientId;
-            if (clientSnap.exists()) {
-                clientId = Object.keys(clientSnap.val())[0];
-            } else {
-                clientId = orderId;
-                await db.ref('clients/' + clientId).set({
-                    id: clientId, name, phone, address, createdAt: new Date().toISOString()
-                });
-            }
+            const clientId = orderId;
+            updates['clients/' + clientId] = {
+                id: clientId, name, phone, address, createdAt: new Date().toISOString(), createdBy
+            };
 
-            for (const item of cart) {
-                const oid = orderId + Math.floor(Math.random() * 1000);
-                await db.ref('orders/' + oid).set({
+            for (const [itemIndex, item] of cart.entries()) {
+                const oid = orderId * 100 + itemIndex;
+                updates['orders/' + oid] = {
                     id: oid, clientId, productId: item.id, qty: item.qty,
                     value: item.price * item.qty, deliveryValue: 0,
                     receiverName, receiverPhone, date: deliveryDate,
                     address, notes: cardMessage || '', payment: selectedPayment,
                     driverId: 0, status: 'pending', createdAt: new Date().toISOString(),
                     source: 'site', clientName: name, clientPhone: phone,
-                    productName: item.name
-                });
+                    productName: item.name, createdBy
+                };
             }
+            await db.ref().update(updates);
 
             fetch('https://hook.us2.make.com/yqpqlou1wmyaib4p6vp7pt6bshfdvt3u', {
                 method: 'POST',
@@ -1831,58 +1846,28 @@
                 }
             ];
             
-            try {
-                const snapshot = await db.ref('products').once('value');
-                const existing = snapshot.val() || {};
-                const existingIds = Object.keys(existing);
-                const needsUpdate = diaDosPaisProducts.some(p => !existingIds.includes(p.id));
-                
-                if (!needsUpdate) {
-                    return diaDosPaisProducts;
-                }
-
-                const toDelete = {};
-                Object.entries(existing).forEach(([key, prod]) => {
-                    const name = (prod.name || '').toLowerCase();
-                    const cat = prod.category || '';
-                    if (cat === 'dia-pais' || name.includes('amor de pai') || name.includes('cesta amor') || name.includes('cafe com amor') || name.includes('café com amor')) {
-                        toDelete['products/' + key] = null;
-                    }
-                });
-                if (Object.keys(toDelete).length > 0) {
-                    await db.ref().update(toDelete);
-                }
-                
-                const toAdd = {};
-                diaDosPaisProducts.forEach(product => {
-                    toAdd['products/' + product.id] = product;
-                });
-                await db.ref().update(toAdd);
-            } catch (err) {
-                console.log('Seed error:', err);
-            }
-            
             return diaDosPaisProducts;
         }
-        
-        seedDiaDosPais().then(() => {
-            db.ref('products').once('value', snap => {
-                allProducts = snap.val() ? Object.values(snap.val()) : [];
-                allProducts.sort((a, b) => (a.order || 99) - (b.order || 99));
-                renderFilters('filter-btns');
-                renderFilters('filter-btns-2');
-                showHome();
-                updateCartCount();
+
+        function renderStoreProducts(products) {
+            allProducts = products;
+            allProducts.sort((a, b) => (a.order || 99) - (b.order || 99));
+            renderFilters('filter-btns');
+            renderFilters('filter-btns-2');
+            showHome();
+            updateCartCount();
+        }
+
+        seedDiaDosPais().then(async seasonalProducts => {
+            const snap = await db.ref('products').once('value');
+            const products = new Map((snap.val() ? Object.values(snap.val()) : []).map(product => [String(product.id), product]));
+            seasonalProducts.forEach(product => {
+                if (!products.has(String(product.id))) products.set(String(product.id), product);
             });
-        }).catch(() => {
-            db.ref('products').once('value', snap => {
-                allProducts = snap.val() ? Object.values(snap.val()) : [];
-                allProducts.sort((a, b) => (a.order || 99) - (b.order || 99));
-                renderFilters('filter-btns');
-                renderFilters('filter-btns-2');
-                showHome();
-                updateCartCount();
-            });
+            renderStoreProducts(Array.from(products.values()));
+        }).catch(error => {
+            console.error('Erro ao carregar a loja:', error);
+            seedDiaDosPais().then(renderStoreProducts);
         });
 
         if ('serviceWorker' in navigator) {
