@@ -15,6 +15,7 @@
     <meta name="apple-mobile-web-app-title" content="Florlinda">
     <meta name="theme-color" content="#E8A5A0">
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <style>
@@ -1319,8 +1320,11 @@
 
         let db = null;
         let auth = null;
+        let appCheck = null;
         try {
             firebase.initializeApp(firebaseConfig);
+            appCheck = firebase.appCheck();
+            appCheck.activate(new firebase.appCheck.ReCaptchaEnterpriseProvider('6Lcmi38tAAAAACppwgZ2UC2IfGkBwBmM7GL6lbgX'), true);
             db = firebase.database();
             auth = firebase.auth();
         } catch(e) {
@@ -1329,7 +1333,9 @@
 
         // DADOS
         let data = { orders: [], products: [], clients: [], finance: [], drivers: [], deliveries: [] };
+        let persistedData = { orders: [], products: [], clients: [], finance: [], drivers: [], deliveries: [] };
         let authGeneration = 0;
+        let localRevision = 0;
         let currentFilter = 'all';
         let currentProductFilter = 'all';
         let currentFinanceFilter = 'all';
@@ -1338,6 +1344,49 @@
         // CARREGAR DADOS via REST API
         const DB_URL = 'https://florlinda-184ec-default-rtdb.firebaseio.com';
         const ADMIN_UID = 'TzTFIRf1C6WPfQekQgeC1vGi8KS2';
+        const COLLECTIONS = ['orders', 'products', 'clients', 'finance', 'drivers', 'deliveries'];
+
+        function cloneData(value) {
+            return JSON.parse(JSON.stringify(value));
+        }
+
+        function recordKey(id) {
+            return `id_${String(id)}`;
+        }
+
+        function normalizeData(value) {
+            const normalized = {};
+            COLLECTIONS.forEach(collection => {
+                normalized[collection] = value && value[collection] ? Object.values(value[collection]) : [];
+            });
+            return normalized;
+        }
+
+        function buildDataPatch(previous, current) {
+            const updates = {};
+            COLLECTIONS.forEach(collection => {
+                const previousItems = new Map((previous[collection] || []).map(item => [String(item.id), item]));
+                const currentItems = new Map((current[collection] || []).map(item => [String(item.id), item]));
+
+                previousItems.forEach((item, id) => {
+                    if (!currentItems.has(id)) updates[`${collection}/${recordKey(id)}`] = null;
+                });
+
+                currentItems.forEach((item, id) => {
+                    const oldItem = previousItems.get(id);
+                    if (!oldItem) {
+                        updates[`${collection}/${recordKey(id)}`] = item;
+                        return;
+                    }
+                    new Set([...Object.keys(oldItem), ...Object.keys(item)]).forEach(field => {
+                        if (JSON.stringify(oldItem[field]) !== JSON.stringify(item[field])) {
+                            updates[`${collection}/${recordKey(id)}/${field}`] = item[field] === undefined ? null : item[field];
+                        }
+                    });
+                });
+            });
+            return updates;
+        }
 
         async function getAuthToken() {
             if (!auth || !auth.currentUser || auth.currentUser.uid !== ADMIN_UID) {
@@ -1348,9 +1397,12 @@
 
         async function firebaseRequest(path, options = {}) {
             const token = await getAuthToken();
+            if (!appCheck) throw new Error('Firebase App Check indisponível');
+            const appCheckToken = await appCheck.getToken(false);
             const url = new URL(`${DB_URL}/${path}`);
             url.searchParams.set('auth', token);
-            return fetch(url.toString(), options);
+            const headers = Object.assign({}, options.headers, { 'X-Firebase-AppCheck': appCheckToken.token });
+            return fetch(url.toString(), Object.assign({}, options, { headers }));
         }
 
         let backupPromise = null;
@@ -1387,7 +1439,7 @@
                 if (!response.ok) throw new Error(`Backup Firebase: HTTP ${response.status}`);
                 const backup = await response.json();
                 if (!backup || !backup.data) throw new Error('Backup vazio');
-                data = backup.data;
+                data = normalizeData(backup.data);
                 dataLoaded = true;
                 await save();
                 refreshAll();
@@ -1400,20 +1452,22 @@
 
         async function loadData(generation = authGeneration) {
             try {
-                const paths = ['orders','products','clients','finance','drivers','deliveries'];
+                const paths = [...COLLECTIONS, 'schemaVersion'];
                 const results = await Promise.all(paths.map(async p => {
                     const response = await firebaseRequest(`${p}.json`);
                     if (!response.ok) throw new Error(`Firebase ${p}: HTTP ${response.status}`);
                     return response.json();
                 }));
                 if (generation !== authGeneration || !auth.currentUser || auth.currentUser.uid !== ADMIN_UID) return false;
-                const [o, p, c, f, d, de] = results;
+                const [o, p, c, f, d, de, schemaVersion] = results;
+                if (schemaVersion !== 2) throw new Error('Migração do banco por ID ainda não concluída');
                 data.orders = o ? Object.values(o) : [];
                 data.products = p ? Object.values(p) : [];
                 data.clients = c ? Object.values(c) : [];
                 data.finance = f ? Object.values(f) : [];
                 data.drivers = d ? Object.values(d) : [];
                 data.deliveries = de ? Object.values(de) : [];
+                persistedData = cloneData(data);
                 lastOrderCount = data.orders.length;
                 dataLoaded = true;
                 fixOldOrders();
@@ -1454,9 +1508,10 @@
         }
 
         async function syncRemoteData() {
-            if (!dataLoaded || syncInProgress) return;
+            if (!dataLoaded || syncInProgress || pendingSaves > 0) return;
             syncInProgress = true;
             const generation = authGeneration;
+            const revision = localRevision;
             try {
                 const paths = ['orders', 'clients', 'finance', 'drivers', 'deliveries'];
                 const results = await Promise.all(paths.map(async path => {
@@ -1465,13 +1520,18 @@
                     const value = await response.json();
                     return value ? Object.values(value) : [];
                 }));
-                if (generation !== authGeneration || !auth.currentUser || auth.currentUser.uid !== ADMIN_UID) return;
+                if (generation !== authGeneration || revision !== localRevision || !auth.currentUser || auth.currentUser.uid !== ADMIN_UID) return;
                 const [orders, clients, finance, drivers, deliveries] = results;
-                data.orders = mergeById(data.orders, orders);
-                data.clients = mergeById(data.clients, clients);
-                data.finance = mergeById(data.finance, finance);
-                data.drivers = mergeById(data.drivers, drivers);
-                data.deliveries = mergeById(data.deliveries, deliveries);
+                data.orders = orders;
+                data.clients = clients;
+                data.finance = finance;
+                data.drivers = drivers;
+                data.deliveries = deliveries;
+                persistedData.orders = cloneData(orders);
+                persistedData.clients = cloneData(clients);
+                persistedData.finance = cloneData(finance);
+                persistedData.drivers = cloneData(drivers);
+                persistedData.deliveries = cloneData(deliveries);
                 refreshAll();
             } catch (error) {
                 console.error('Erro na sincronização automática:', error);
@@ -1534,15 +1594,20 @@
 
         let dataLoaded = false;
         let saveQueue = Promise.resolve();
+        let pendingSaves = 0;
 
         function save() {
-            saveQueue = saveQueue.catch(() => false).then(() => saveNow());
+            localRevision++;
+            pendingSaves++;
+            saveQueue = saveQueue.catch(() => false).then(() => saveNow()).finally(() => pendingSaves--);
             return saveQueue;
         }
 
         async function saveNow() {
             if (!dataLoaded) return false;
-            const snapshot = JSON.parse(JSON.stringify(data));
+            const snapshot = cloneData(data);
+            const updates = buildDataPatch(persistedData, snapshot);
+            if (Object.keys(updates).length === 0) return true;
             try {
                 backupPromise = backupPromise || backupData(snapshot);
                 await backupPromise;
@@ -1552,33 +1617,19 @@
                 return false;
             }
             backupPromise = null;
-            const paths = {
-                orders: snapshot.orders,
-                products: snapshot.products,
-                clients: snapshot.clients,
-                finance: snapshot.finance,
-                deliveries: snapshot.deliveries,
-                drivers: snapshot.drivers
-            };
-            await Promise.all(Object.entries(paths).map(async ([key, val]) => {
-                const response = await firebaseRequest(`${key}.json`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(val)
-                });
-                if (!response.ok) throw new Error(`Firebase ${key}: HTTP ${response.status}`);
-            }));
+            const response = await firebaseRequest('.json', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates)
+            });
+            if (!response.ok) throw new Error(`Firebase PATCH: HTTP ${response.status}`);
+            persistedData = cloneData(snapshot);
             return true;
         }
 
-        async function saveDriversOnly(drivers) {
-            await backupData(JSON.parse(JSON.stringify(data)));
-            const response = await firebaseRequest('drivers.json', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(drivers)
-            });
-            if (!response.ok) throw new Error(`Firebase drivers: HTTP ${response.status}`);
+        async function saveDriversOnly() {
+            const saved = await save();
+            if (!saved) throw new Error('Não foi possível persistir os entregadores');
         }
 
         function seedProducts() {
@@ -1958,7 +2009,7 @@
             refreshAll();
             try {
                 if (!dataLoaded) throw new Error('Dados ainda não carregados');
-                await saveDriversOnly(data.drivers);
+                await saveDriversOnly();
             } catch (error) {
                 data.drivers = data.drivers.filter(d => d.id !== driver.id);
                 console.error('Erro ao salvar entregador:', error);
@@ -2552,7 +2603,7 @@
                         </div>
                         <div style="display:flex; gap:8px; align-items:center;">
                             ${c.phone ? `<a href="https://wa.me/55${c.phone.replace(/\D/g, '')}" target="_blank" style="color:var(--success); text-decoration:none; font-size:1.5em;">💬</a>` : ''}
-                            <button onclick="event.stopPropagation(); deleteClient(${c.id})" style="background:#ff6b6b; color:white; border:none; border-radius:50%; width:28px; height:28px; cursor:pointer; font-size:1em; display:flex; align-items:center; justify-content:center;">✕</button>
+                            <button onclick='event.stopPropagation(); deleteClient(${JSON.stringify(c.id)})' style="background:#ff6b6b; color:white; border:none; border-radius:50%; width:28px; height:28px; cursor:pointer; font-size:1em; display:flex; align-items:center; justify-content:center;">✕</button>
                         </div>
                     </div>
                 `;
@@ -2853,7 +2904,7 @@
                 refreshAll();
                 try {
                     if (!dataLoaded) throw new Error('Dados ainda não carregados');
-                    await saveDriversOnly(data.drivers);
+                    await saveDriversOnly();
                 } catch (error) {
                     data.drivers = previousDrivers;
                     console.error('Erro ao excluir entregador:', error);
@@ -3707,6 +3758,7 @@
                     dataLoaded = false;
                     adminAppStarted = false;
                     data = { orders: [], products: [], clients: [], finance: [], drivers: [], deliveries: [] };
+                    persistedData = { orders: [], products: [], clients: [], finance: [], drivers: [], deliveries: [] };
                     document.getElementById('login-screen').style.display = 'flex';
                     return;
                 }

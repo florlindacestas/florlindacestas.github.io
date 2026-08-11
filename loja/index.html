@@ -1397,6 +1397,7 @@
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script>
@@ -1410,9 +1411,15 @@
             appId: "1:667525922025:web:c075c18ce185f24608c478"
         };
         const storeApp = firebase.initializeApp(firebaseConfig, 'storefront');
+        const appCheck = storeApp.appCheck();
+        appCheck.activate(new firebase.appCheck.ReCaptchaEnterpriseProvider('6Lcmi38tAAAAACppwgZ2UC2IfGkBwBmM7GL6lbgX'), true);
         const db = storeApp.database();
         const auth = storeApp.auth();
         const authReady = auth.signInAnonymously();
+
+        function recordKey(id) {
+            return `id_${String(id)}`;
+        }
 
         let allProducts = [];
         let cart = JSON.parse(localStorage.getItem('florlinda-cart') || '[]');
@@ -1719,14 +1726,20 @@
             const createdBy = auth.currentUser.uid;
             const updates = {};
 
+            const reservation = await db.ref('orderRateLimits/' + createdBy).transaction(current => {
+                if (current && Date.now() - Number(current.lastOrderAt || 0) < 10000) return;
+                return { batchId: orderId, lastOrderAt: firebase.database.ServerValue.TIMESTAMP };
+            }, undefined, false);
+            if (!reservation.committed) throw new Error('Aguarde alguns segundos antes de enviar outro pedido.');
+
             const clientId = orderId;
-            updates['clients/' + clientId] = {
+            updates['clients/' + recordKey(clientId)] = {
                 id: clientId, name, phone, address, createdAt: new Date().toISOString(), createdBy
             };
 
             for (const [itemIndex, item] of cart.entries()) {
                 const oid = orderId * 100 + itemIndex;
-                updates['orders/' + oid] = {
+                updates['orders/' + recordKey(oid)] = {
                     id: oid, clientId, productId: item.id, qty: item.qty,
                     value: item.price * item.qty, deliveryValue: 0,
                     receiverName, receiverPhone, date: deliveryDate,
