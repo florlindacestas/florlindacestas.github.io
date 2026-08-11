@@ -1728,7 +1728,7 @@
 
             const reservation = await db.ref('orderRateLimits/' + createdBy).transaction(current => {
                 if (current && Date.now() - Number(current.lastOrderAt || 0) < 10000) return;
-                return { batchId: orderId, lastOrderAt: firebase.database.ServerValue.TIMESTAMP };
+                return { batchId: orderId, itemCount: cart.length, lastOrderAt: firebase.database.ServerValue.TIMESTAMP };
             }, undefined, false);
             if (!reservation.committed) throw new Error('Aguarde alguns segundos antes de enviar outro pedido.');
 

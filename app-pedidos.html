@@ -1609,7 +1609,7 @@
             const updates = buildDataPatch(persistedData, snapshot);
             if (Object.keys(updates).length === 0) return true;
             try {
-                backupPromise = backupPromise || backupData(snapshot);
+                backupPromise = backupPromise || backupData(cloneData(persistedData));
                 await backupPromise;
             } catch (error) {
                 backupPromise = null;
