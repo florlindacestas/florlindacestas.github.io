@@ -440,6 +440,7 @@
         .modal-body { padding: 25px; }
         .modal-body h3 { font-size: 1.5rem; margin-bottom: 10px; }
         .modal-body .price { font-size: 1.4rem; color: var(--green-dark); font-weight: 600; margin-bottom: 15px; }
+        .modal-detail-label { color: var(--pink-dark); font-size: 0.8rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 5px; }
         .modal-body .desc { color: var(--brown-light); line-height: 1.6; margin-bottom: 20px; }
         .qty-row { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
         .qty-btn {
@@ -832,7 +833,7 @@
             max-width: 100% !important;
         }
         @media (max-width: 480px) {
-            .instagram-gallery iframe { height: 1000px !important; }
+            .instagram-gallery iframe { height: 620px !important; }
         }
         .ig-item {
             aspect-ratio: 1;
@@ -1250,6 +1251,7 @@
             <div class="modal-body">
                 <h3 id="modal-name"></h3>
                 <div class="price" id="modal-price"></div>
+                <div class="modal-detail-label">Descrição e itens</div>
                 <div class="desc" id="modal-desc"></div>
                 <div class="qty-row">
                     <button class="qty-btn" onclick="changeQty(-1)">−</button>
@@ -1487,7 +1489,28 @@
             ['Cesta Violeta', 190, 'cesta', '💜', 'cesta-violeta.png'],
             ['Mini Bolo', 130, 'bolo', '🍰', 'mini-bolo.png'],
             ['Bolo Bento', 75, 'bolo', '🎂', 'bolo-bento.png']
-        ].map((p, index) => ({ id: `local-${index + 1}`, name: p[0], price: p[1], category: p[2], emoji: p[3], image: `../img/produtos/${p[4]}`, order: index + 1 }));
+        ];
+
+        const LOCAL_DETAILS = {
+            box: 'Box preparado com cuidado e acabamento especial. Itens: flores, embalagem decorada e os complementos indicados no nome do produto.',
+            cesta: 'Cesta montada para presentear em momentos especiais. Itens e sabores variam conforme a opção escolhida e são confirmados no atendimento.',
+            caixa: 'Caixa presenteável com composição delicada. Itens: embalagem personalizada e os complementos indicados no nome do produto.',
+            bolo: 'Bolo preparado sob encomenda para acompanhar seu presente. Itens e sabores podem ser confirmados pelo WhatsApp.'
+        };
+
+        const LOCAL_PRODUCTS_WITH_DETAILS = LOCAL_PRODUCTS.map((p, index) => ({
+            id: `local-${index + 1}`,
+            name: p[0],
+            price: p[1],
+            category: p[2],
+            emoji: p[3],
+            image: `../img/produtos/${p[4]}`,
+            description: LOCAL_DETAILS[p[2]],
+            order: index + 1
+        }));
+        
+        // Mantém os produtos locais prontos para uso quando o Firebase estiver indisponível.
+        const LOCAL_CATALOG = LOCAL_PRODUCTS_WITH_DETAILS;
 
         window.addEventListener('scroll', () => {
             if (scrollTimeout) return;
@@ -1610,7 +1633,7 @@
             currentQty = 1;
             document.getElementById('modal-name').textContent = product.name;
             document.getElementById('modal-price').textContent = formatPrice(product.price);
-            document.getElementById('modal-desc').textContent = product.description || '';
+            document.getElementById('modal-desc').textContent = product.description || LOCAL_DETAILS[getCategory(product)] || 'Consulte a composição deste presente pelo WhatsApp.';
             document.getElementById('modal-qty').textContent = 1;
             if (product.image) {
                 document.getElementById('modal-img').innerHTML = `<img src="${product.image}" alt="${product.name}">`;
@@ -1850,7 +1873,7 @@
         });
 
         function finishProductLoad(products) {
-            allProducts = products.length > 0 ? products : LOCAL_PRODUCTS;
+            allProducts = products.length > 0 ? products : LOCAL_CATALOG;
             allProducts.sort((a, b) => (a.order || 99) - (b.order || 99));
             renderFilters('filter-btns');
             renderFilters('filter-btns-2');
@@ -1858,7 +1881,7 @@
             updateCartCount();
         }
 
-        finishProductLoad(LOCAL_PRODUCTS);
+        finishProductLoad(LOCAL_CATALOG);
         db.ref('products').once('value', snap => {
             const products = snap.val() ? Object.values(snap.val()).filter(product => product.category !== 'dia-pais') : [];
             finishProductLoad(products);
