@@ -1672,10 +1672,6 @@
                 { name: "Cesta Violeta", price: 190, category: "cesta", emoji: "💜", stock: 0, description: "" },
                 { name: "Mini Bolo", price: 130, category: "acessorio", emoji: "🍰", stock: 0, description: "Somente vendido como adicional das cestas." },
                 { name: "Bolo Bento", price: 75, category: "acessorio", emoji: "🎂", stock: 0, description: "Vendido somente como adicional das cestas." },
-                { id: 'dia-pais-04', name: "Cesta Amor de Pai G com Bolo Bentô", price: 450, category: "dia-pais", emoji: "💙", stock: 0, description: "Cesta premium dia dos pais." },
-                { id: 'dia-pais-03', name: "Cesta Amor de Pai G", price: 390, category: "dia-pais", emoji: "💙", stock: 0, description: "Cesta grande dia dos pais." },
-                { id: 'dia-pais-02', name: "Cesta Café com Amor M", price: 290, category: "dia-pais", emoji: "💙", stock: 0, description: "Cesta média dia dos pais." },
-                { id: 'dia-pais-01', name: "Cesta Amor de Pai P", price: 230, category: "dia-pais", emoji: "💙", stock: 0, description: "Cesta pequena dia dos pais." }
             ];
             const existingNames = data.products.map(p => p.name);
             let nextId = data.products.length > 0 ? Math.max(...data.products.map(p => parseInt(p.id) || 0)) + 1 : 1;
@@ -3349,7 +3345,7 @@
             function buildCard(o) {
                 const client = data.clients.find(c => c.id === o.clientId);
                 const clientName = client ? client.name : '';
-                const cardContent = `<div class="card-icon">🧔🏻🏆</div><div class="card-subtitle">Feliz Dia dos Pais!</div><div class="card-message">${o.cardMessage || ''}</div>`;
+                const cardContent = `<div class="card-icon">🌸</div><div class="card-subtitle">Com carinho, Flor Linda</div><div class="card-message">${o.cardMessage || ''}</div>`;
                 return `<div class="card-wrapper"><div class="card-label">#${o.orderNumber || '...'} ${clientName}</div><div class="card-10x10"><div class="card-bg"><div class="card-inner">${cardContent}</div></div></div></div>`;
             }
 
@@ -3445,7 +3441,7 @@
             const receiverName = o.receiverName || (client ? client.name : '');
             const hasPhotos = o.photos && o.photos.length > 0;
 
-            const cardContent = `<div class="card-icon">🧔🏻🏆</div><div class="card-subtitle">Feliz Dia dos Pais!</div><div class="card-message">${o.cardMessage || ''}</div>`;
+            const cardContent = `<div class="card-icon">🌸</div><div class="card-subtitle">Com carinho, Flor Linda</div><div class="card-message">${o.cardMessage || ''}</div>`;
             const cardHTML = `<div class="card-10x10"><div class="card-bg"><div class="card-inner">${cardContent}</div></div></div>`;
 
             let polaroidsHTML = '';

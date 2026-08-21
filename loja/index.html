@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flor Linda Arranjos e Cestas | Floricultura em Florianópolis</title>
     <meta name="description" content="Flor Linda Arranjos e Cestas - Loja de cestas de presente em Florianópolis/SC. Arranjos de flores, cestas de café, box de flores e presentes para ocasiões especiais. Peça pelo WhatsApp!">
-    <meta name="keywords" content="floricultura florianópolis, arranjos de flores, cestas de café, cesta de presente, flor linda, box de flores, bolo bento, dia dos pais, dia das mães">
+    <meta name="keywords" content="floricultura florianópolis, arranjos de flores, cestas de café, cesta de presente, flor linda, box de flores, bolo bento, presentes personalizados">
     <meta name="author" content="Flor Linda Arranjos e Cestas">
     <meta name="robots" content="index, follow">
     <meta property="og:title" content="Flor Linda Arranjos e Cestas | Floricultura em Florianópolis">
@@ -68,16 +68,16 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
-            --pink: #6BA3D6;
-            --pink-light: #B8D4ED;
-            --pink-dark: #4A8AC4;
-            --lilac: #7FB8D8;
-            --lilac-light: #D4E8F5;
-            --green: #5A9E97;
-            --green-dark: #4A8E87;
-            --cream: #F0F7FC;
-            --brown: #2C5F8A;
-            --brown-light: #5A8AB5;
+            --pink: #D9828B;
+            --pink-light: #F3C9C8;
+            --pink-dark: #B85F6B;
+            --lilac: #D9A6B5;
+            --lilac-light: #F8E5E1;
+            --green: #78977A;
+            --green-dark: #55745B;
+            --cream: #FFF9F3;
+            --brown: #5A3C43;
+            --brown-light: #8B6C6D;
             --white: #ffffff;
             --shadow: 0 2px 15px rgba(0,0,0,0.08);
             --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
@@ -115,10 +115,10 @@
         .top-bar-link:hover { opacity: 0.85; background: rgba(255,255,255,0.1); }
         .whatsapp-link { background: rgba(37,211,102,0.25); }
         .whatsapp-link:hover { background: rgba(37,211,102,0.4); }
-        .instagram-link { background: rgba(44,95,138,0.3); }
-        .instagram-link:hover { background: rgba(44,95,138,0.5); }
+        .instagram-link { background: rgba(90,60,67,0.3); }
+        .instagram-link:hover { background: rgba(90,60,67,0.5); }
         header {
-            background: linear-gradient(135deg, var(--pink) 0%, var(--lilac) 100%);
+            background: linear-gradient(135deg, var(--pink-dark) 0%, var(--pink) 55%, var(--lilac) 100%);
             padding: 0;
             position: sticky;
             top: 0;
@@ -186,7 +186,7 @@
 
         /* HERO */
         .hero {
-            background: linear-gradient(135deg, var(--pink-light) 0%, var(--lilac-light) 50%, var(--pink-light) 100%);
+            background: linear-gradient(135deg, var(--lilac-light) 0%, #FFF5ED 50%, var(--pink-light) 100%);
             padding: 80px 20px;
             text-align: center;
             position: relative;
@@ -234,6 +234,35 @@
             transition: transform 0.3s, box-shadow 0.3s;
         }
         .hero-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+        .hero-content { max-width: 780px; margin: 0 auto; position: relative; z-index: 1; }
+        .hero-eyebrow {
+            display: inline-block;
+            color: var(--green-dark);
+            background: rgba(255,255,255,0.7);
+            border: 1px solid rgba(90,158,151,0.22);
+            border-radius: 30px;
+            padding: 7px 16px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+        .hero-actions { display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; position: relative; }
+        .hero-secondary-btn {
+            color: var(--green-dark);
+            background: rgba(255,255,255,0.72);
+            border: 1px solid rgba(90,158,151,0.35);
+            padding: 13px 25px;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.3s, background 0.3s;
+        }
+        .hero-secondary-btn:hover { transform: translateY(-2px); background: white; }
+        .hero-highlights { display: flex; justify-content: center; gap: 18px; flex-wrap: wrap; margin-top: 32px; color: var(--brown-light); font-size: 0.82rem; position: relative; }
+        .hero-highlights span { background: rgba(255,255,255,0.42); padding: 7px 12px; border-radius: 20px; }
 
         /* SECTIONS */
         .section {
@@ -694,19 +723,20 @@
         /* RESPONSIVE */
         @media (max-width: 768px) {
             .hero h2 { font-size: 1.8rem; }
+            .hero { padding: 58px 20px; }
             .products-grid { grid-template-columns: repeat(2, 1fr); gap: 15px; }
             .cart-sidebar { width: 100%; right: -100%; }
             .nav-links { gap: 12px; }
             .payment-options { grid-template-columns: 1fr; }
-            .banner-dia-pais img { max-height: 180px !important; }
         }
         @media (max-width: 480px) {
+            .hero h2 { font-size: 1.65rem; }
+            .hero-eyebrow { font-size: 0.7rem; }
+            .hero-highlights { gap: 7px; }
             .top-bar { flex-wrap: nowrap; justify-content: center; }
             .top-bar-link { font-size: 0.75rem; padding: 4px 8px; }
             .products-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; }
             .header-inner { flex-wrap: wrap; gap: 10px; }
-            .banner-dia-pais img { max-height: 150px !important; }
-            .banner-dia-pais + div a { padding: 8px 16px !important; font-size: 0.8rem !important; }
         }
 
         /* LOADING */
@@ -727,7 +757,7 @@
 
         /* INSTAGRAM SECTION */
         .instagram-section {
-            background: #fef5f0;
+            background: #FFF1EC;
             padding: 50px 20px;
             margin-top: 0;
         }
@@ -761,18 +791,18 @@
             height: 100%;
             border-radius: 50%;
             object-fit: cover;
-            border: 3px solid #fef5f0;
+            border: 3px solid #FFF1EC;
         }
         .instagram-info h3 {
             font-family: 'Poppins', sans-serif;
             font-size: 1.1rem;
-            color: #4a3a2a;
+            color: #5A3C43;
             margin-bottom: 3px;
             font-weight: 600;
         }
         .instagram-info p {
             font-size: 0.9rem;
-            color: #8a7a6a;
+            color: #8B6C6D;
         }
         .instagram-follow-btn {
             display: flex;
@@ -820,7 +850,7 @@
             text-align: center;
         }
         .instagram-cta p {
-            color: #8a7a6a;
+            color: #8B6C6D;
             margin-bottom: 15px;
             font-size: 0.95rem;
         }
@@ -1080,11 +1110,8 @@
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 
-    <div style="background:linear-gradient(90deg,#6BA3D6,#4A8AC4);color:white;text-align:center;padding:10px 20px;font-size:0.85rem;font-weight:500;">
-        🚧 Site em desenvolvimento. Em breve novidades! 🌸
-    </div>
-    <div style="background:#1a3a5c;color:white;text-align:center;padding:10px 20px;font-size:0.85rem;font-weight:500;">
-        📦 Não atendemos presencialmente. Somente vendas online pelos canais WhatsApp, Instagram e site!
+    <div style="background:#5A3C43;color:white;text-align:center;padding:10px 20px;font-size:0.85rem;font-weight:500;">
+        📦 Atendimento online em Florianópolis e região • Encomende pelo WhatsApp
     </div>
     <header>
         <div class="top-bar">
@@ -1114,19 +1141,21 @@
     </header>
 
     <div id="page-home">
-        <div style="background:#1a3a5c;">
-            <a href="#" onclick="event.preventDefault();showCatalog('dia-pais')" class="banner-dia-pais" style="display:block;text-decoration:none;">
-                <img src="../img/dia-dos-pais/banner-dia-pais.png" alt="Dia dos Pais - Promoção" style="width:100%;max-height:200px;object-fit:contain;display:block;">
-            </a>
-            <div style="text-align:center;padding:15px 20px 25px;">
-                <a href="#" onclick="event.preventDefault();showCatalog('dia-pais')" style="display:inline-block;background:white;color:#1a3a5c;padding:12px 30px;border-radius:25px;font-weight:600;font-size:1rem;text-decoration:none;box-shadow:0 4px 15px rgba(0,0,0,0.3);">💙 Clique aqui para ver as cestas Dia dos Pais</a>
-            </div>
-        </div>
-
         <div class="hero">
-            <h2>Flores que Contam Histórias</h2>
-            <p>Arranjos, cestas e presentes feitos com carinho para os momentos especiais da sua vida</p>
-            <button class="hero-btn" onclick="event.preventDefault();showCatalog()">Ver Produtos</button>
+            <div class="hero-content">
+                <span class="hero-eyebrow">Presentes feitos à mão em Florianópolis</span>
+                <h2>Um carinho que floresce em cada detalhe</h2>
+                <p>Arranjos, cestas e boxes preparados com ingredientes selecionados para transformar qualquer momento em uma lembrança especial.</p>
+                <div class="hero-actions">
+                    <button class="hero-btn" onclick="event.preventDefault();showCatalog()">Conheça os presentes</button>
+                    <a class="hero-secondary-btn" href="https://wa.me/5548996725990?text=Ol%C3%A1!%20Quero%20montar%20um%20presente%20especial." target="_blank">Montar um presente</a>
+                </div>
+                <div class="hero-highlights" aria-label="Diferenciais Flor Linda">
+                    <span>🌸 Feito com cuidado</span>
+                    <span>🎁 Para todos os momentos</span>
+                    <span>🚚 Entrega combinada</span>
+                </div>
+            </div>
         </div>
 
         <div class="section">
@@ -1210,7 +1239,7 @@
                     <span>Total:</span><span id="checkout-total" style="color:var(--green-dark)">R$0</span>
                 </div>
             </div>
-            <button id="place-order-button" class="place-order-btn" onclick="placeOrder().catch(error => { console.error('Erro ao enviar pedido:', error); showToast('Não foi possível enviar o pedido. Tente novamente.'); })">Confirmar Pedido</button>
+            <button class="place-order-btn" onclick="placeOrder()">Confirmar Pedido</button>
         </div>
     </div>
 
@@ -1334,7 +1363,7 @@
                 </div>
             </div>
             <div class="review-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-            <div class="review-text">Presenteei meu pai no Dia dos Pais e ele amou! Tudo muito bem feito, com carinho e qualidade. Com certeza vou pedir de novo!</div>
+            <div class="review-text">O presente chegou lindo e com tudo muito bem cuidado. Dá para sentir o carinho em cada detalhe. Com certeza vou pedir de novo!</div>
         </div>
 
         <div class="google-cta">
@@ -1352,14 +1381,14 @@
             <div class="map-info">
                 <h2>Onde estamos</h2>
                 <div class="map-info-item">
-                    <div class="map-info-icon" style="background:#e8f5e9;">📦</div>
+                    <div class="map-info-icon" style="background:#E6F0E5;">📦</div>
                     <div>
                         <h4>Atendimento</h4>
                         <p>Somente vendas online</p>
                     </div>
                 </div>
                 <div class="map-info-item">
-                    <div class="map-info-icon" style="background:#e3f2fd;">📱</div>
+                    <div class="map-info-icon" style="background:#F8E5E1;">📱</div>
                     <div>
                         <h4>WhatsApp</h4>
                         <p>(48) 99672-5990</p>
@@ -1397,7 +1426,6 @@
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script>
@@ -1407,19 +1435,13 @@
             databaseURL: "https://florlinda-184ec-default-rtdb.firebaseio.com",
             projectId: "florlinda-184ec",
             storageBucket: "florlinda-184ec.appspot.com",
-            messagingSenderId: "667525922025",
-            appId: "1:667525922025:web:c075c18ce185f24608c478"
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abc123"
         };
-        const storeApp = firebase.initializeApp(firebaseConfig, 'storefront');
-        const appCheck = storeApp.appCheck();
-        appCheck.activate(new firebase.appCheck.ReCaptchaEnterpriseProvider('6Lcmi38tAAAAACppwgZ2UC2IfGkBwBmM7GL6lbgX'), true);
-        const db = storeApp.database();
-        const auth = storeApp.auth();
-        const authReady = auth.signInAnonymously();
-
-        function recordKey(id) {
-            return `id_${String(id)}`;
-        }
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+        auth.signInAnonymously().catch(e => console.error('Auth anônima falhou:', e));
 
         let allProducts = [];
         let cart = JSON.parse(localStorage.getItem('florlinda-cart') || '[]');
@@ -1428,6 +1450,44 @@
         let selectedPayment = 'pix';
         let currentFilter = 'all';
         let scrollTimeout = null;
+
+        const LOCAL_PRODUCTS = [
+            ['Box de Flores G', 390, 'box', '💐', 'box-flores-g.png'],
+            ['Box de Flores M', 330, 'box', '💐', 'box-flores-p.png'],
+            ['Box de Flores P', 210, 'box', '💐', 'box-flores-p.png'],
+            ['Cesta Kids', 250, 'cesta', '🧸', 'cesta-kids.png'],
+            ['Cesta Kids Mini', 190, 'cesta', '🧸', 'cesta-kids-mini.png'],
+            ['Caixa Envelope', 95, 'caixa', '📦', 'caixa-envelope.png'],
+            ['Caixa Afeto', 120, 'caixa', '📦', 'caixa-afeto.png'],
+            ['Cake Box', 375, 'box', '🎂', 'cake-box.png'],
+            ['Box Primavera', 270, 'box', '🌸', 'box-primavera.png'],
+            ['Box Luxo', 280, 'box', '✨', 'box-luxo.png'],
+            ['Box Bebida', 270, 'box', '🍷', 'box-bebida.png'],
+            ['Box Mimo', 200, 'box', '🎁', 'box-mimo.png'],
+            ['Box de Flores e Doces G', 280, 'box', '🌸', 'box-flores-doces-g.png'],
+            ['Box de Flores e Doces M', 185, 'box', '🌸', 'box-flores-doces-m.png'],
+            ['Box de Flores e Doces P', 140, 'box', '🌸', 'box-flores-doces-p.png'],
+            ['Box de Flores e Doces PP', 100, 'box', '🌸', 'box-flores-doces-pp.png'],
+            ['Box Nascimento 1', 240, 'box', '👶', 'box-nascimento-1.png'],
+            ['Box Nascimento 2', 240, 'box', '👶', 'box-nascimento-2.png'],
+            ['Cesta Café Nascimento', 295, 'cesta', '☕', 'cesta-cafe-nascimento.png'],
+            ['Cesta Happy Hour', 370, 'cesta', '🥂', 'cesta-happy-hour.png'],
+            ['Frios P', 270, 'cesta', '🧀', 'frios-p.png'],
+            ['Cesta Sem Lactose', 270, 'cesta', '🌿', 'cesta-sem-lactose.png'],
+            ['Cesto G', 270, 'cesta', '🧺', 'cesto-g.png'],
+            ['Cesto M', 200, 'cesta', '🧺', 'cesto-m.png'],
+            ['Cesto P', 150, 'cesta', '🧺', 'cesto-p.png'],
+            ['Cesta Box G', 365, 'cesta', '📦', 'cesta-box-g.png'],
+            ['Cesta Box M', 280, 'cesta', '📦', 'cesta-box-m.png'],
+            ['Cesta Box P', 210, 'cesta', '📦', 'cesta-box-p.png'],
+            ['Cesta Super Premium c/ Mini Bolo', 480, 'cesta', '👑', 'cesta-super-premium-bolo.png'],
+            ['Cesta Super Premium c/ Bolo Bento', 450, 'cesta', '👑', 'cesta-super-premium-bento.png'],
+            ['Cesta Premium', 335, 'cesta', '🌟', 'cesta-premium.png'],
+            ['Cesta Orquídea', 260, 'cesta', '🌷', 'cesta-orquidea.png'],
+            ['Cesta Violeta', 190, 'cesta', '💜', 'cesta-violeta.png'],
+            ['Mini Bolo', 130, 'bolo', '🍰', 'mini-bolo.png'],
+            ['Bolo Bento', 75, 'bolo', '🎂', 'bolo-bento.png']
+        ].map((p, index) => ({ id: `local-${index + 1}`, name: p[0], price: p[1], category: p[2], emoji: p[3], image: `../img/produtos/${p[4]}`, order: index + 1 }));
 
         window.addEventListener('scroll', () => {
             if (scrollTimeout) return;
@@ -1450,8 +1510,7 @@
             'balao': 'Balões',
             'bolo': 'Bolos',
             'caixa': 'Caixas',
-            'outros': 'Outros',
-            'dia-pais': '💙 Dia dos Pais'
+            'outros': 'Outros'
         };
 
         function getCategory(product) {
@@ -1689,25 +1748,7 @@
             el.classList.add('selected');
         }
 
-        let orderSubmissionInProgress = false;
-
         async function placeOrder() {
-            if (orderSubmissionInProgress) return;
-            const button = document.getElementById('place-order-button');
-            orderSubmissionInProgress = true;
-            button.disabled = true;
-            button.textContent = 'Enviando...';
-            try {
-                await submitOrder();
-            } finally {
-                orderSubmissionInProgress = false;
-                button.disabled = false;
-                button.textContent = 'Confirmar Pedido';
-            }
-        }
-
-        async function submitOrder() {
-            await authReady;
             const name = document.getElementById('client-name').value.trim();
             const phone = document.getElementById('client-phone').value.trim();
             const address = document.getElementById('client-address').value.trim();
@@ -1723,33 +1764,30 @@
 
             const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
             const orderId = Date.now();
-            const createdBy = auth.currentUser.uid;
-            const updates = {};
 
-            const reservation = await db.ref('orderRateLimits/' + createdBy).transaction(current => {
-                if (current && Date.now() - Number(current.lastOrderAt || 0) < 10000) return;
-                return { batchId: orderId, itemCount: cart.length, lastOrderAt: firebase.database.ServerValue.TIMESTAMP };
-            }, undefined, false);
-            if (!reservation.committed) throw new Error('Aguarde alguns segundos antes de enviar outro pedido.');
+            const clientSnap = await db.ref('clients').orderByChild('phone').equalTo(phone).once('value');
+            let clientId;
+            if (clientSnap.exists()) {
+                clientId = Object.keys(clientSnap.val())[0];
+            } else {
+                clientId = orderId;
+                await db.ref('clients/' + clientId).set({
+                    id: clientId, name, phone, address, createdAt: new Date().toISOString()
+                });
+            }
 
-            const clientId = orderId;
-            updates['clients/' + recordKey(clientId)] = {
-                id: clientId, name, phone, address, createdAt: new Date().toISOString(), createdBy
-            };
-
-            for (const [itemIndex, item] of cart.entries()) {
-                const oid = orderId * 100 + itemIndex;
-                updates['orders/' + recordKey(oid)] = {
+            for (const item of cart) {
+                const oid = orderId + Math.floor(Math.random() * 1000);
+                await db.ref('orders/' + oid).set({
                     id: oid, clientId, productId: item.id, qty: item.qty,
                     value: item.price * item.qty, deliveryValue: 0,
                     receiverName, receiverPhone, date: deliveryDate,
                     address, notes: cardMessage || '', payment: selectedPayment,
                     driverId: 0, status: 'pending', createdAt: new Date().toISOString(),
                     source: 'site', clientName: name, clientPhone: phone,
-                    productName: item.name, createdBy
-                };
+                    productName: item.name
+                });
             }
-            await db.ref().update(updates);
 
             fetch('https://hook.us2.make.com/yqpqlou1wmyaib4p6vp7pt6bshfdvt3u', {
                 method: 'POST',
@@ -1811,59 +1849,8 @@
             if (e.target === this) closeModal();
         });
 
-        async function seedDiaDosPais() {
-            const diaDosPaisProducts = [
-                {
-                    id: 'dia-pais-04',
-                    name: 'Cesta Amor de Pai G com Bolo Bentô',
-                    description: '1 bolo bentô, 1 suco de tangerina, 1 chocoleite, 2 drip coffee, 1 capuccino, 1 pão de leite ninho, 2 mini pães de batata de requeijão, 2 croissant de peito de Peru, 3 cookies recheados, 2 folhados de chocolate, 4 Mini pães brioche, 4 Assadinhos napolitano, 5 Assadinhos de frango, 2 torcidinhos de ciabatta com calabresa, 1 geleia de frutas vermelhas, 1 antepasto de berinjela, azeitona e abobrinha, 1 caixa com 6 brigadeiros gourmet, 1 baguete, 1 brownie charge, 2 biscoitos recheados com nutella, 6 biscoitinhos de parmesão e pimenta, 3 mini pastéis assados de linguiça Blumenau, 2 esfirra de carne, 1 pote com uva, 1 focaccia com tomate e alecrim, 1 arranjo de flores ou varal com 6 fotos.',
-                    price: 450,
-                    image: '../img/dia-dos-pais/cesta-g-bento.png',
-                    emoji: '💙',
-                    category: 'dia-pais',
-                    promotion: true,
-                    order: 1
-                },
-                {
-                    id: 'dia-pais-03',
-                    name: 'Cesta Amor de Pai G',
-                    description: '1 bolo de cenoura, 1 suco de tangerina, 1 chocoleite, 2 drip coffee, 1 capuccino, 1 pão de leite ninho, 2 mini pães de batata de requeijão, 2 croissant de peito de Peru, 3 cookies recheados, 2 folhados de chocolate, 4 Mini pães brioche, 4 Assadinhos napolitano, 5 Assadinhos de frango, 2 torcidinhos de ciabatta com calabresa, 1 geleia de frutas vermelhas, 1 antepasto de berinjela, azeitona e abobrinha, 1 caixa com 6 brigadeiros gourmet, 1 baguete, 1 brownie charge, 2 biscoitos recheados com nutella, 6 biscoitinhos de parmesão e pimenta, 3 mini pastéis assados de linguiça Blumenau, 2 esfirra de carne, 1 pote com uva, 1 focaccia com tomate e alecrim, 1 arranjo de flores ou varal com 6 fotos.',
-                    price: 390,
-                    image: '../img/dia-dos-pais/cesta-g-1.png',
-                    emoji: '💙',
-                    category: 'dia-pais',
-                    promotion: true,
-                    order: 2
-                },
-                {
-                    id: 'dia-pais-02',
-                    name: 'Cesta Café com Amor M',
-                    description: '1 bolo de cenoura, 1 suco de tangerina, 1 chocoleite, 1 drip coffee, 1 pão de leite ninho, 2 folhados de chocolate, 2 Cookies recheados, 3 Assadinhos napolitano, 4 Assadinhos de frango, 3 Mini pães brioche, 2 Mini pães de batata de requeijão, 2 croissant de peito de peru, 1 geleia de frutas vermelhas, 2 biscoitos recheados com Nutella, 4 biscoitinhos de parmesão e pimenta, 1 caixa com 4 brigadeiros gourmet, 1 brownie charge, 2 mini pastéis assados de linguiça Blumenau, 2 torcidinhos de ciabatta de calabresa, 1 pote com uva, 1 arranjo de flores ou varal com 5 fotos.',
-                    price: 290,
-                    image: '../img/dia-dos-pais/cesta-m-1.png',
-                    emoji: '💙',
-                    category: 'dia-pais',
-                    promotion: true,
-                    order: 3
-                },
-                {
-                    id: 'dia-pais-01',
-                    name: 'Cesta Amor de Pai P',
-                    description: '1 bolo de cenoura, 1 suco de Tangerina, 1 drip Coffee, 1 pão de leite ninho, 1 folhado de chocolate, 1 cookie recheado, 2 Assadinhos de napolitano, 3 Assadinhos de frango, 2 Mini pastel assado de linguiça Blumenau, 2 biscoitos recheados com nutella, 1 croissant de peito de peru, 2 brigadeiros gourmet, 1 arranjo de flores ou varal com 4 fotos.',
-                    price: 230,
-                    image: '../img/dia-dos-pais/cesta-p-1.png',
-                    emoji: '💙',
-                    category: 'dia-pais',
-                    promotion: true,
-                    order: 4
-                }
-            ];
-            
-            return diaDosPaisProducts;
-        }
-
-        function renderStoreProducts(products) {
-            allProducts = products;
+        function finishProductLoad(products) {
+            allProducts = products.length > 0 ? products : LOCAL_PRODUCTS;
             allProducts.sort((a, b) => (a.order || 99) - (b.order || 99));
             renderFilters('filter-btns');
             renderFilters('filter-btns-2');
@@ -1871,17 +1858,11 @@
             updateCartCount();
         }
 
-        seedDiaDosPais().then(async seasonalProducts => {
-            const snap = await db.ref('products').once('value');
-            const products = new Map((snap.val() ? Object.values(snap.val()) : []).map(product => [String(product.id), product]));
-            seasonalProducts.forEach(product => {
-                if (!products.has(String(product.id))) products.set(String(product.id), product);
-            });
-            renderStoreProducts(Array.from(products.values()));
-        }).catch(error => {
-            console.error('Erro ao carregar a loja:', error);
-            seedDiaDosPais().then(renderStoreProducts);
-        });
+        finishProductLoad(LOCAL_PRODUCTS);
+        db.ref('products').once('value', snap => {
+            const products = snap.val() ? Object.values(snap.val()).filter(product => product.category !== 'dia-pais') : [];
+            finishProductLoad(products);
+        }, () => finishProductLoad([]));
 
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(regs => {
