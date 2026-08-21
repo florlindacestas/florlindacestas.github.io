@@ -88,6 +88,7 @@
             background: var(--cream);
             color: var(--brown);
             min-height: 100vh;
+            overflow-x: hidden;
         }
         h1, h2, h3, h4 { font-family: 'Playfair Display', serif; }
 
@@ -145,8 +146,8 @@
             text-decoration: none;
             color: white;
         }
-        .logo img { height: 120px; }
-        .logo h1 { font-size: 2.2rem; color: white; }
+        .logo img { height: clamp(72px, 8vw, 96px); width: auto; }
+        .logo h1 { font-size: clamp(1.7rem, 2.5vw, 2.2rem); color: white; }
         .nav-links { display: flex; gap: 20px; align-items: center; }
         .nav-links a {
             color: white;
@@ -724,20 +725,29 @@
         /* RESPONSIVE */
         @media (max-width: 768px) {
             .hero h2 { font-size: 1.8rem; }
-            .hero { padding: 58px 20px; }
+            .hero { padding: 48px 20px; }
             .products-grid { grid-template-columns: repeat(2, 1fr); gap: 15px; }
             .cart-sidebar { width: 100%; right: -100%; }
             .nav-links { gap: 12px; }
             .payment-options { grid-template-columns: 1fr; }
+            .header-inner { padding: 8px 16px; }
+            .logo img { height: 68px; }
+            .logo h1 { font-size: 1.65rem; }
         }
         @media (max-width: 480px) {
             .hero h2 { font-size: 1.65rem; }
+            .hero { padding: 38px 16px; }
             .hero-eyebrow { font-size: 0.7rem; }
             .hero-highlights { gap: 7px; }
-            .top-bar { flex-wrap: nowrap; justify-content: center; }
-            .top-bar-link { font-size: 0.75rem; padding: 4px 8px; }
+            .top-bar { gap: 2px; padding: 6px 8px; }
+            .top-bar-link { font-size: 0.68rem; padding: 4px 6px; gap: 4px; }
             .products-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; }
-            .header-inner { flex-wrap: wrap; gap: 10px; }
+            .header-inner { flex-direction: column; gap: 4px; padding: 6px 12px 10px; }
+            .logo img { height: 58px; }
+            .logo h1 { font-size: 1.45rem; }
+            .nav-links { width: 100%; justify-content: center; gap: 16px; }
+            .nav-links a { font-size: 0.82rem; }
+            .cart-btn { padding: 7px 12px; font-size: 0.82rem; }
         }
 
         /* LOADING */
