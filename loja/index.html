@@ -348,7 +348,7 @@
             height: 40%;
             background: linear-gradient(transparent, rgba(0,0,0,0.05));
         }
-        .product-img img { width: 100%; height: 100%; object-fit: cover; }
+        .product-img img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
         .product-info { padding: 15px; display: flex; flex-direction: column; flex: 1; }
         .product-name {
             font-family: 'Playfair Display', serif;
@@ -427,7 +427,7 @@
             font-size: 5rem;
             border-radius: var(--radius) var(--radius) 0 0;
         }
-        .modal-img img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius) var(--radius) 0 0; }
+        .modal-img img { width: 100%; height: 100%; object-fit: contain; padding: 8px; border-radius: var(--radius) var(--radius) 0 0; }
         .modal-body { padding: 25px; }
         .modal-body h3 { font-size: 1.5rem; margin-bottom: 10px; }
         .modal-body .price { font-size: 1.4rem; color: var(--green-dark); font-weight: 600; margin-bottom: 15px; }
@@ -1440,24 +1440,24 @@
         let scrollTimeout = null;
 
         const LOCAL_PRODUCTS = [
-            ['Box de Flores G', 390, 'box', '💐', 'box-flores-g.png'],
+            ['Box de Flores G', 390, 'box', '💐', 'box-flores-g.jpg'],
             ['Box de Flores M', 330, 'box', '💐', 'box-flores-m.png'],
-            ['Box de Flores P', 210, 'box', '💐', 'box-flores-p.png'],
+            ['Box de Flores P', 210, 'box', '💐', 'box-flores-p.jpg'],
             ['Cesta Kids', 250, 'cesta', '🧸', 'cesta-kids.png'],
             ['Cesta Kids Mini', 190, 'cesta', '🧸', 'cesta-kids-mini.png'],
             ['Caixa Envelope', 95, 'caixa', '📦', 'caixa-envelope.png'],
             ['Caixa Afeto', 120, 'caixa', '📦', 'caixa-afeto.png'],
-            ['Cake Box', 375, 'box', '🎂', 'cake-box.png'],
-            ['Box Primavera', 270, 'box', '🌸', 'box-primavera.png'],
-            ['Box Luxo', 280, 'box', '✨', 'box-luxo.png'],
-            ['Box Bebida', 270, 'box', '🍷', 'box-bebida.png'],
-            ['Box Mimo', 200, 'box', '🎁', 'box-mimo.png'],
-            ['Box de Flores e Doces G', 280, 'box', '🌸', 'box-flores-doces-g.png'],
-            ['Box de Flores e Doces M', 185, 'box', '🌸', 'box-flores-doces-m.png'],
-            ['Box de Flores e Doces P', 140, 'box', '🌸', 'box-flores-doces-p.png'],
-            ['Box de Flores e Doces PP', 100, 'box', '🌸', 'box-flores-doces-pp.png'],
-            ['Box Nascimento 1', 240, 'box', '👶', 'box-nascimento-1.png'],
-            ['Box Nascimento 2', 240, 'box', '👶', 'box-nascimento-2.png'],
+            ['Cake Box', 375, 'box', '🎂', 'cake-box.jpg'],
+            ['Box Primavera', 270, 'box', '🌸', 'box-primavera.jpg'],
+            ['Box Luxo', 280, 'box', '✨', 'box-luxo.jpg'],
+            ['Box Bebida', 270, 'box', '🍷', 'box-bebida.jpg'],
+            ['Box Mimo', 200, 'box', '🎁', 'box-mimo.jpg'],
+            ['Box de Flores e Doces G', 280, 'box', '🌸', 'box-flores-doces-g.jpg'],
+            ['Box de Flores e Doces M', 185, 'box', '🌸', 'box-flores-doces-m.jpg'],
+            ['Box de Flores e Doces P', 140, 'box', '🌸', 'box-flores-doces-p.jpg'],
+            ['Box de Flores e Doces PP', 100, 'box', '🌸', 'box-flores-doces-pp.jpg'],
+            ['Box Nascimento 1', 240, 'box', '👶', 'box-nascimento-1.jpg'],
+            ['Box Nascimento 2', 240, 'box', '👶', 'box-nascimento-2.jpg'],
             ['Cesta Café Nascimento', 295, 'cesta', '☕', 'cesta-cafe-nascimento.png'],
             ['Cesta Happy Hour', 370, 'cesta', '🥂', 'cesta-happy-hour.png'],
             ['Frios P', 270, 'cesta', '🧀', 'frios-p.png'],
@@ -1482,6 +1482,16 @@
             cesta: 'Cesta montada para presentear em momentos especiais. Itens e sabores variam conforme a opção escolhida e são confirmados no atendimento.',
             caixa: 'Caixa presenteável com composição delicada. Itens: embalagem personalizada e os complementos indicados no nome do produto.',
             bolo: 'Bolo preparado sob encomenda para acompanhar seu presente. Itens e sabores podem ser confirmados pelo WhatsApp.'
+        };
+
+        const PRODUCT_DETAILS = {
+            'Box Luxo': '1 Orquídea.\n1 barra de chocolate feita com chocolate belga Callebaut (consulte os sabores).\n1 caixa com 4 brigadeiros.\n2 macarons.\n1 mini espumante ou vinho grande.',
+            'Box de Flores e Doces G': '1 arranjo de flores.\n2 alfajores.\n2 pães de mel.\n4 brigadeiros gourmet.\n3 macarons.\n1 barra de chocolate Callebaut artesanal.\n1 vinho grande ou mini espumante.\n\nA caixa acompanha a inicial. Nome personalizado: acréscimo de R$ 10,00.',
+            'Box de Flores e Doces M': '1 arranjo de flores.\n2 alfajores.\n2 pães de mel.\n4 brigadeiros gourmet.\n2 macarons.\n\nA caixa acompanha a inicial. Nome personalizado: acréscimo de R$ 10,00.',
+            'Box de Flores e Doces P': '1 arranjo de flores.\n1 alfajor.\n1 pão de mel.\n1 caixa com 2 brigadeiros gourmet.\n\nA caixa acompanha a inicial. Nome personalizado: acréscimo de R$ 10,00.',
+            'Box de Flores e Doces PP': '1 arranjo de flores.\n1 alfajor.\n1 pão de mel.\n\nA caixa acompanha a inicial. Nome personalizado: acréscimo de R$ 10,00.',
+            'Box Nascimento 1': '1 arranjo de flores.\n1 naninha.\n1 balão mini bubble.\n1 caixa com nome do bebê.\n\nNome personalizado incluso.',
+            'Box Nascimento 2': '1 arranjo de flores.\n1 naninha.\n2 sachês de chá da mamãe.\n3 macarons.\n1 caixa com nome do bebê.\n\nNome personalizado incluso.'
         };
 
         const LOCAL_PRODUCTS_WITH_DETAILS = LOCAL_PRODUCTS.map((p, index) => ({
@@ -1615,8 +1625,25 @@
         }
 
         function getProductImage(product) {
+            if (product.name === 'Box de Flores e Doces G') return '../img/produtos/box-flores-doces-g.jpg';
+            if (product.name === 'Box de Flores e Doces M') return '../img/produtos/box-flores-doces-m.jpg';
+            if (product.name === 'Box de Flores e Doces P') return '../img/produtos/box-flores-doces-p.jpg';
+            if (product.name === 'Box de Flores e Doces PP') return '../img/produtos/box-flores-doces-pp.jpg';
+            if (product.name === 'Box Nascimento 1') return '../img/produtos/box-nascimento-1.jpg';
+            if (product.name === 'Box Nascimento 2') return '../img/produtos/box-nascimento-2.jpg';
+            if (product.name === 'Box Luxo') return '../img/produtos/box-luxo.jpg';
+            if (product.name === 'Box Primavera') return '../img/produtos/box-primavera.jpg';
+            if (product.name === 'Cake Box') return '../img/produtos/cake-box.jpg';
+            if (product.name === 'Box Bebida') return '../img/produtos/box-bebida.jpg';
+            if (product.name === 'Box Mimo') return '../img/produtos/box-mimo.jpg';
+            if (product.name === 'Box de Flores G') return '../img/produtos/box-flores-g.jpg';
             if (product.name === 'Box de Flores M') return '../img/produtos/box-flores-m.png';
+            if (product.name === 'Box de Flores P') return '../img/produtos/box-flores-p.jpg';
             return product.image;
+        }
+
+        function getProductDescription(product) {
+            return PRODUCT_DETAILS[product.name] || product.description || LOCAL_DETAILS[getCategory(product)] || 'Consulte a composição deste presente pelo WhatsApp.';
         }
 
         function openModal(product) {
@@ -1624,7 +1651,8 @@
             currentQty = 1;
             document.getElementById('modal-name').textContent = product.name;
             document.getElementById('modal-price').textContent = formatPrice(product.price);
-            document.getElementById('modal-desc').textContent = product.description || LOCAL_DETAILS[getCategory(product)] || 'Consulte a composição deste presente pelo WhatsApp.';
+            document.getElementById('modal-desc').style.whiteSpace = 'pre-line';
+            document.getElementById('modal-desc').textContent = getProductDescription(product);
             document.getElementById('modal-qty').textContent = 1;
             const productImage = getProductImage(product);
             if (productImage) {
