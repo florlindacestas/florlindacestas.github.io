@@ -1441,7 +1441,7 @@
 
         const LOCAL_PRODUCTS = [
             ['Box de Flores G', 390, 'box', '💐', 'box-flores-g.png'],
-            ['Box de Flores M', 330, 'box', '💐', 'box-flores-p.png'],
+            ['Box de Flores M', 330, 'box', '💐', 'box-flores-m.png'],
             ['Box de Flores P', 210, 'box', '💐', 'box-flores-p.png'],
             ['Cesta Kids', 250, 'cesta', '🧸', 'cesta-kids.png'],
             ['Cesta Kids Mini', 190, 'cesta', '🧸', 'cesta-kids-mini.png'],
@@ -1614,6 +1614,11 @@
             showToast(`${product.name} adicionado ao carrinho!`);
         }
 
+        function getProductImage(product) {
+            if (product.name === 'Box de Flores M') return '../img/produtos/box-flores-m.png';
+            return product.image;
+        }
+
         function openModal(product) {
             currentProduct = product;
             currentQty = 1;
@@ -1621,8 +1626,9 @@
             document.getElementById('modal-price').textContent = formatPrice(product.price);
             document.getElementById('modal-desc').textContent = product.description || LOCAL_DETAILS[getCategory(product)] || 'Consulte a composição deste presente pelo WhatsApp.';
             document.getElementById('modal-qty').textContent = 1;
-            if (product.image) {
-                document.getElementById('modal-img').innerHTML = `<img src="${product.image}" alt="${product.name}">`;
+            const productImage = getProductImage(product);
+            if (productImage) {
+                document.getElementById('modal-img').innerHTML = `<img src="${productImage}" alt="${product.name}">`;
             } else {
                 document.getElementById('modal-img').innerHTML = product.emoji || '🌸';
             }
@@ -1651,7 +1657,7 @@
             }
             grid.innerHTML = products.map(p => `
                 <div class="product-card" onclick='openModal(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
-                    <div class="product-img">${p.image ? `<img src="${p.image}" alt="${p.name}">` : (p.emoji || '🌸')}</div>
+                    <div class="product-img">${getProductImage(p) ? `<img src="${getProductImage(p)}" alt="${p.name}">` : (p.emoji || '🌸')}</div>
                     <div class="product-info">
                         <div class="product-name">${p.name}</div>
                         <div class="product-price">${formatPrice(p.price)}</div>
