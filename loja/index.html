@@ -826,14 +826,19 @@
         }
         .instagram-gallery {
             max-width: 950px;
-            margin: 0 auto 30px;
+            height: 420px;
+            margin: 0 auto 24px;
+            overflow: hidden;
+            border-radius: 16px;
         }
         .instagram-gallery iframe {
             width: 100% !important;
             max-width: 100% !important;
+            height: 420px !important;
         }
         @media (max-width: 480px) {
-            .instagram-gallery iframe { height: 620px !important; }
+            .instagram-gallery { height: 360px; margin-bottom: 20px; }
+            .instagram-gallery iframe { height: 360px !important; }
         }
         .ig-item {
             aspect-ratio: 1;
@@ -1413,24 +1418,7 @@
         </a>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCx5-kXjh2JKR3ws79sJ-2Fm5NMXvbXq8s",
-            authDomain: "florlinda-184ec.firebaseapp.com",
-            databaseURL: "https://florlinda-184ec-default-rtdb.firebaseio.com",
-            projectId: "florlinda-184ec",
-            storageBucket: "florlinda-184ec.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abc123"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const auth = firebase.auth();
-        auth.signInAnonymously().catch(e => console.error('Auth anônima falhou:', e));
-
         let allProducts = [];
         let cart = JSON.parse(localStorage.getItem('florlinda-cart') || '[]');
         let currentProduct = null;
@@ -1795,7 +1783,7 @@
             el.classList.add('selected');
         }
 
-        async function placeOrder() {
+        function placeOrder() {
             const name = document.getElementById('client-name').value.trim();
             const phone = document.getElementById('client-phone').value.trim();
             const address = document.getElementById('client-address').value.trim();
@@ -1810,50 +1798,6 @@
             }
 
             const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
-            const orderId = Date.now();
-
-            const clientSnap = await db.ref('clients').orderByChild('phone').equalTo(phone).once('value');
-            let clientId;
-            if (clientSnap.exists()) {
-                clientId = Object.keys(clientSnap.val())[0];
-            } else {
-                clientId = orderId;
-                await db.ref('clients/' + clientId).set({
-                    id: clientId, name, phone, address, createdAt: new Date().toISOString()
-                });
-            }
-
-            for (const item of cart) {
-                const oid = orderId + Math.floor(Math.random() * 1000);
-                await db.ref('orders/' + oid).set({
-                    id: oid, clientId, productId: item.id, qty: item.qty,
-                    value: item.price * item.qty, deliveryValue: 0,
-                    receiverName, receiverPhone, date: deliveryDate,
-                    address, notes: cardMessage || '', payment: selectedPayment,
-                    driverId: 0, status: 'pending', createdAt: new Date().toISOString(),
-                    source: 'site', clientName: name, clientPhone: phone,
-                    productName: item.name
-                });
-            }
-
-            fetch('https://hook.us2.make.com/yqpqlou1wmyaib4p6vp7pt6bshfdvt3u', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: 'novo_pedido',
-                    produtos: cart.map(i => `${i.name} x${i.qty} - ${formatPrice(i.price * i.qty)}`).join(', '),
-                    total: formatPrice(total),
-                    cliente_nome: name,
-                    cliente_telefone: phone,
-                    recebedor_nome: receiverName,
-                    recebedor_telefone: receiverPhone,
-                    endereco: address,
-                    pagamento: selectedPayment,
-                    entrega: deliveryDate,
-                    mensagem: cardMessage || '',
-                    data: new Date().toISOString()
-                })
-            }).catch(e => console.error('Webhook error:', e));
 
             const whatsappMsg = encodeURIComponent(
                 `🌸 *Novo pedido Site Florlinda*\n\n` +
@@ -1898,7 +1842,7 @@
 
         function finishProductLoad(products) {
             allProducts = products.length > 0 ? products : LOCAL_CATALOG;
-                sortByPrice(allProducts);
+            sortByPrice(allProducts);
             renderFilters('filter-btns');
             renderFilters('filter-btns-2');
             showHome();
@@ -1906,10 +1850,6 @@
         }
 
         finishProductLoad(LOCAL_CATALOG);
-        db.ref('products').once('value', snap => {
-            const products = snap.val() ? Object.values(snap.val()).filter(product => product.category !== 'dia-pais') : [];
-            finishProductLoad(products);
-        }, () => finishProductLoad([]));
 
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(regs => {
