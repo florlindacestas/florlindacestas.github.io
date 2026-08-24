@@ -1709,6 +1709,10 @@
             filterProducts(document.querySelector('.search-box')?.value || '');
         }
 
+        function sortByPrice(products) {
+            return products.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
+        }
+
         function filterProducts(query) {
             const q = query.toLowerCase();
             let filtered = allProducts;
@@ -1718,7 +1722,7 @@
             if (q) {
                 filtered = filtered.filter(p => p.name.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q));
             }
-            filtered.sort((a, b) => (a.order || 99) - (b.order || 99));
+            sortByPrice(filtered);
             if (document.getElementById('page-home').style.display !== 'none') {
                 renderProducts(filtered, 'all-grid');
             }
@@ -1729,7 +1733,7 @@
             document.getElementById('page-home').style.display = 'block';
             document.getElementById('page-catalog').style.display = 'none';
             document.getElementById('page-checkout').style.display = 'none';
-            const sorted = [...allProducts].sort((a, b) => (a.order || 99) - (b.order || 99));
+            const sorted = sortByPrice([...allProducts]);
             renderProducts(sorted, 'all-grid');
         }
 
@@ -1748,7 +1752,7 @@
             if (currentFilter !== 'all') {
                 filtered = allProducts.filter(p => getCategory(p) === currentFilter);
             }
-            filtered.sort((a, b) => (a.order || 99) - (b.order || 99));
+            sortByPrice(filtered);
             renderProducts(filtered, 'catalog-grid');
             renderFilters('filter-btns-2');
             document.querySelectorAll('#filter-btns-2 .filter-btn').forEach(b => {
@@ -1894,7 +1898,7 @@
 
         function finishProductLoad(products) {
             allProducts = products.length > 0 ? products : LOCAL_CATALOG;
-            allProducts.sort((a, b) => (a.order || 99) - (b.order || 99));
+                sortByPrice(allProducts);
             renderFilters('filter-btns');
             renderFilters('filter-btns-2');
             showHome();
