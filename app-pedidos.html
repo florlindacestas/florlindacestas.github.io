@@ -638,7 +638,7 @@
                     : firebase.auth.Auth.Persistence.SESSION;
                 await auth.setPersistence(persistence);
                 const credential = await auth.signInWithEmailAndPassword(email, password);
-                if (credential.user.uid !== ADMIN_UID) {
+                if (!ADMIN_UIDS.has(credential.user.uid)) {
                     await auth.signOut();
                     throw new Error('Esta conta não possui acesso administrativo');
                 }
@@ -1343,7 +1343,10 @@
 
         // CARREGAR DADOS via REST API
         const DB_URL = 'https://florlinda-184ec-default-rtdb.firebaseio.com';
-        const ADMIN_UID = 'TzTFIRf1C6WPfQekQgeC1vGi8KS2';
+        const ADMIN_UIDS = new Set([
+            'TzTFIRf1C6WPfQekQgeC1vGi8KS2',
+            '98qz01xFPoW6iyMJEaD1GBPfAeM2'
+        ]);
         const COLLECTIONS = ['orders', 'products', 'clients', 'finance', 'drivers', 'deliveries'];
 
         function cloneData(value) {
@@ -1389,7 +1392,7 @@
         }
 
         async function getAuthToken() {
-            if (!auth || !auth.currentUser || auth.currentUser.uid !== ADMIN_UID) {
+            if (!auth || !auth.currentUser || !ADMIN_UIDS.has(auth.currentUser.uid)) {
                 throw new Error('Sessão administrativa necessária');
             }
             return auth.currentUser.getIdToken();
@@ -1458,7 +1461,7 @@
                     if (!response.ok) throw new Error(`Firebase ${p}: HTTP ${response.status}`);
                     return response.json();
                 }));
-                if (generation !== authGeneration || !auth.currentUser || auth.currentUser.uid !== ADMIN_UID) return false;
+                if (generation !== authGeneration || !auth.currentUser || !ADMIN_UIDS.has(auth.currentUser.uid)) return false;
                 const [o, p, c, f, d, de, schemaVersion] = results;
                 if (schemaVersion !== 2) throw new Error('Migração do banco por ID ainda não concluída');
                 data.orders = o ? Object.values(o) : [];
@@ -1520,7 +1523,7 @@
                     const value = await response.json();
                     return value ? Object.values(value) : [];
                 }));
-                if (generation !== authGeneration || revision !== localRevision || !auth.currentUser || auth.currentUser.uid !== ADMIN_UID) return;
+                if (generation !== authGeneration || revision !== localRevision || !auth.currentUser || !ADMIN_UIDS.has(auth.currentUser.uid)) return;
                 const [orders, clients, finance, drivers, deliveries] = results;
                 data.orders = orders;
                 data.clients = clients;
@@ -3758,7 +3761,7 @@
                     document.getElementById('login-screen').style.display = 'flex';
                     return;
                 }
-                if (user.uid !== ADMIN_UID) {
+                if (!ADMIN_UIDS.has(user.uid)) {
                     await auth.signOut();
                     document.getElementById('login-error').textContent = 'Esta conta não possui acesso administrativo.';
                     document.getElementById('login-error').style.display = 'block';
