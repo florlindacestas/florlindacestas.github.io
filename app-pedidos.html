@@ -1411,7 +1411,13 @@
                     console.warn('App Check indisponível; seguindo com autenticação Firebase:', error);
                 }
             }
-            return fetch(url.toString(), Object.assign({}, options, { headers }));
+            const request = () => fetch(url.toString(), Object.assign({}, options, { headers }));
+            const response = await request();
+            if ((response.status === 401 || response.status === 403) && headers['X-Firebase-AppCheck']) {
+                delete headers['X-Firebase-AppCheck'];
+                return request();
+            }
+            return response;
         }
 
         let backupPromise = null;
