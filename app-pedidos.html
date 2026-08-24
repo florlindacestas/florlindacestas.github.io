@@ -1400,11 +1400,17 @@
 
         async function firebaseRequest(path, options = {}) {
             const token = await getAuthToken();
-            if (!appCheck) throw new Error('Firebase App Check indisponível');
-            const appCheckToken = await appCheck.getToken(false);
             const url = new URL(`${DB_URL}/${path}`);
             url.searchParams.set('auth', token);
-            const headers = Object.assign({}, options.headers, { 'X-Firebase-AppCheck': appCheckToken.token });
+            const headers = Object.assign({}, options.headers);
+            if (appCheck) {
+                try {
+                    const appCheckToken = await appCheck.getToken(false);
+                    if (appCheckToken?.token) headers['X-Firebase-AppCheck'] = appCheckToken.token;
+                } catch (error) {
+                    console.warn('App Check indisponível; seguindo com autenticação Firebase:', error);
+                }
+            }
             return fetch(url.toString(), Object.assign({}, options, { headers }));
         }
 
