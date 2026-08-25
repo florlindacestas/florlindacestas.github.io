@@ -73,6 +73,20 @@ services:
     volumes:
       - store_data:/data
 
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../:/srv/site:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - store-api
+
   evolution-api:
     image: evoapicloud/evolution-api:latest
     restart: unless-stopped
@@ -96,3 +110,5 @@ volumes:
   leads_data:
   evolution_instances:
   store_data:
+  caddy_data:
+  caddy_config:

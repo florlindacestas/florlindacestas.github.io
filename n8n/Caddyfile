@@ -1,0 +1,15 @@
+:80 {
+    root * /srv/site
+    handle /api/* {
+        reverse_proxy store-api:8000
+    }
+    file_server
+}
+
+painel.florlindacestas.com {
+    root * /srv/site
+    handle /api/* {
+        reverse_proxy store-api:8000
+    }
+    file_server
+}
