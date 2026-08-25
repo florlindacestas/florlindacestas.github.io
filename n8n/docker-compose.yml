@@ -1,0 +1,98 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    restart: unless-stopped
+    ports:
+      - "${N8N_PORT}:5678"
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: ${POSTGRES_DB}
+      DB_POSTGRESDB_USER: ${POSTGRES_USER}
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD}
+      N8N_HOST: ${N8N_HOST}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: ${N8N_PROTOCOL}
+      N8N_EDITOR_BASE_URL: ${N8N_EDITOR_BASE_URL}
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL}
+      N8N_CORS_ALLOW_ORIGIN: ${N8N_CORS_ALLOW_ORIGIN}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+      GENERIC_TIMEZONE: America/Sao_Paulo
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./ilha-lar-leads.json:/data/ilha-lar-leads.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  site:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../aluguel:/usr/share/nginx/html:ro
+      - ../aluguel/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - n8n
+
+  lead-api:
+    build: ./lead-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - leads_data:/data
+      - ../aluguel/uploads:/app/uploads
+    environment:
+      MAINTENANCE_WEBHOOK_URL: http://n8n:5678/webhook/manutencao
+
+  store-api:
+    build: ./store-api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8002:8000"
+    environment:
+      STORE_DB: /data/florlinda.db
+    volumes:
+      - store_data:/data
+
+  evolution-api:
+    image: evoapicloud/evolution-api:latest
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      SERVER_URL: http://100.83.237.60:8081
+      DOCKER_ENV_CI: "true"
+      AUTHENTICATION_TYPE: apikey
+      AUTHENTICATION_API_KEY: ilha_lar_secret_key_123
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://ilha_lar:ilhalar_postgres_pass_2026@postgres:5432/n8n?schema=evolution
+      CACHE_REDIS_ENABLED: "false"
+      CACHE_LOCAL_ENABLED: "true"
+    volumes:
+      - evolution_instances:/evolution/instances
+
+volumes:
+  postgres_data:
+  n8n_data:
+  leads_data:
+  evolution_instances:
+  store_data:

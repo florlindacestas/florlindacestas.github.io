@@ -15,8 +15,6 @@
     <meta name="apple-mobile-web-app-title" content="Florlinda">
     <meta name="theme-color" content="#E8A5A0">
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <style>
         * {
@@ -1318,17 +1316,12 @@
             appId: "1:667525922025:web:c075c18ce185f24608c478"
         };
 
-        let db = null;
         let auth = null;
-        let appCheck = null;
         try {
             firebase.initializeApp(firebaseConfig);
-            appCheck = firebase.appCheck();
-            appCheck.activate(new firebase.appCheck.ReCaptchaEnterpriseProvider('6Lcmi38tAAAAACppwgZ2UC2IfGkBwBmM7GL6lbgX'), true);
-            db = firebase.database();
             auth = firebase.auth();
         } catch(e) {
-            console.log('Firebase SDK não disponível, usando REST API');
+            console.log('Firebase Auth não disponível');
         }
 
         // DADOS
@@ -1342,7 +1335,7 @@
         let currentDeliveryDate = 'today';
 
         // CARREGAR DADOS via REST API
-        const DB_URL = 'https://florlinda-184ec-default-rtdb.firebaseio.com';
+        const LOCAL_API_URL = 'http://localhost:8002/api/data';
         const ADMIN_UIDS = new Set([
             'TzTFIRf1C6WPfQekQgeC1vGi8KS2',
             '98qz01xFPoW6iyMJEaD1GBPfAeM2'
@@ -1399,25 +1392,13 @@
         }
 
         async function firebaseRequest(path, options = {}) {
-            const token = await getAuthToken();
-            const url = new URL(`${DB_URL}/${path}`);
-            url.searchParams.set('auth', token);
-            const headers = Object.assign({}, options.headers);
-            if (appCheck) {
-                try {
-                    const appCheckToken = await appCheck.getToken(false);
-                    if (appCheckToken?.token) headers['X-Firebase-AppCheck'] = appCheckToken.token;
-                } catch (error) {
-                    console.warn('App Check indisponível; seguindo com autenticação Firebase:', error);
-                }
-            }
-            const request = () => fetch(url.toString(), Object.assign({}, options, { headers }));
-            const response = await request();
-            if ((response.status === 401 || response.status === 403) && headers['X-Firebase-AppCheck']) {
-                delete headers['X-Firebase-AppCheck'];
-                return request();
-            }
-            return response;
+            await getAuthToken();
+            const cleanPath = path.split('?')[0].replace(/\.json$/, '');
+            const url = cleanPath ? `${LOCAL_API_URL}/${cleanPath}` : LOCAL_API_URL;
+            const headers = Object.assign({}, options.headers, {
+                'X-Admin-UID': auth.currentUser.uid
+            });
+            return fetch(url, Object.assign({}, options, { headers }));
         }
 
         let backupPromise = null;
