@@ -33,6 +33,7 @@ def database():
         """
     )
     db.execute("CREATE TABLE IF NOT EXISTS store_meta (name TEXT PRIMARY KEY, value TEXT NOT NULL)")
+    db.execute("CREATE TABLE IF NOT EXISTS firebase_root (name TEXT PRIMARY KEY, data_json TEXT NOT NULL)")
     db.execute("INSERT OR IGNORE INTO store_meta (name, value) VALUES ('schemaVersion', '2')")
     return db
 
@@ -89,7 +90,12 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/data/backups/latest":
             with database() as db:
                 row = db.execute("SELECT value FROM store_meta WHERE name = 'backup_latest'").fetchone()
-            self.respond(200, json.loads(row[0]) if row else None)
+                if not row:
+                    row = db.execute("SELECT data_json FROM firebase_root WHERE name = 'backups'").fetchone()
+                    value = json.loads(row[0]).get("latest") if row else None
+                else:
+                    value = json.loads(row[0])
+            self.respond(200, value)
             return
         collection = path.removeprefix("/api/data/")
         if collection in COLLECTIONS:

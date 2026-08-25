@@ -36,11 +36,21 @@ def migrate(source_path, database_path):
             name TEXT PRIMARY KEY,
             value TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS firebase_root (
+            name TEXT PRIMARY KEY,
+            data_json TEXT NOT NULL
+        );
         """
     )
 
     counts = {}
     with db:
+        for name, value in payload.items():
+            if name not in COLLECTIONS:
+                db.execute(
+                    "INSERT OR REPLACE INTO firebase_root (name, data_json) VALUES (?, ?)",
+                    (name, json.dumps(value, ensure_ascii=False, separators=(",", ":"))),
+                )
         for collection in COLLECTIONS:
             records = payload.get(collection) or {}
             if not isinstance(records, dict):
