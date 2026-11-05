@@ -1797,8 +1797,6 @@
             if (product.category && CATEGORIES[product.category]) return product.category;
             const n = (product.name || '').toLowerCase();
             if (n.includes('natal')) return 'natal';
-            if (product.category && CATEGORIES[product.category]) return product.category;
-            const n = product.name.toLowerCase();
             if (n.includes('cesta') || n.includes('cesto')) return 'cesta';
             if (n.includes('box')) return 'box';
             if (n.includes('arranjo')) return 'arranjo';
